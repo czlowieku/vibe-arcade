@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ArcadeMachine } from './machine.js';
+import { PinballTable } from './pinball-table.js';
 
 export class ArcadeRoom {
   constructor(scene) {
@@ -8,6 +9,10 @@ export class ArcadeRoom {
     this._buildRoom();
     this._addDecorations();
     this._placeMachines();
+
+    // Pinball table — between counter and orange arcade
+    this.pinballTable = new PinballTable(new THREE.Vector3(3.5, 0, 4));
+    this.scene.add(this.pinballTable.group);
   }
 
   _buildRoom() {
@@ -586,6 +591,17 @@ export class ArcadeRoom {
         }
       });
     }
+
+    // Pinball table meshes
+    if (this.pinballTable) {
+      this.pinballTable.group.traverse((child) => {
+        if (child.isMesh) {
+          child.userData.pinball = this.pinballTable;
+          meshes.push(child);
+        }
+      });
+    }
+
     return meshes;
   }
 }

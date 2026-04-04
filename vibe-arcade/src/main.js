@@ -9,6 +9,7 @@ import { NpcManager } from './npc-manager.js';
 import { loadState, saveState, getApiKey } from './storage.js';
 import { getStarterPack, getCardById, CARDS } from './card-system.js';
 import { Exterior } from './exterior.js';
+import { PinballTable } from './pinball-table.js';
 
 // --- Prompt Panel ---
 let pendingRecipe = null;
@@ -84,6 +85,58 @@ document.getElementById('btn-start-coding').addEventListener('click', () => {
   if (!activeMachine || !pendingRecipe) return;
   const extra = document.getElementById('prompt-extra').value.trim();
   document.getElementById('prompt-panel').classList.add('hidden');
+
+  const genreCard = getCardById(pendingRecipe.genre.cardId);
+  const isPinball = genreCard && genreCard.id.startsWith('pinball-');
+
+  if (isPinball && activeMachine && activeMachine.buildFromConfig) {
+    // Pinball generation flow
+    activeMachine.state = 'generating';
+
+    const themeCard = getCardById(pendingRecipe.theme.cardId);
+    const modifierCard = pendingRecipe.modifier ? getCardById(pendingRecipe.modifier.cardId) : null;
+
+    fetch('/api/generate-pinball', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        genre: genreCard.id,
+        theme: themeCard.id,
+        modifier: modifierCard ? modifierCard.id : null,
+        cardLevels: {
+          genre: pendingRecipe.genre.stars,
+          theme: pendingRecipe.theme.stars,
+          modifier: pendingRecipe.modifier ? pendingRecipe.modifier.stars : 0,
+        },
+      }),
+    }).then(async response => {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = JSON.parse(line.slice(6));
+          if (data.type === 'done') {
+            activeMachine.buildFromConfig(data.config);
+          }
+        }
+      }
+    }).catch(err => {
+      console.error('Pinball generation failed:', err);
+      activeMachine.state = 'empty';
+    });
+
+    cameraCtrl.zoomTo(activeMachine);
+    hud.showBackButton();
+    pendingRecipe = null;
+    return;
+  }
 
   gameManager.generateGame(activeMachine, pendingRecipe, extra);
   cameraCtrl.zoomTo(activeMachine);
@@ -179,6 +232,9 @@ hud.onPlayAgain = () => {
 };
 
 hud.onBackToArcade = () => {
+  if (activeMachine && activeMachine.engine) {
+    activeMachine.stopGame();
+  }
   gameManager.stopGame();
   cameraCtrl.zoomOut();
   activeMachine = null;
@@ -188,6 +244,9 @@ hud.onBackToArcade = () => {
 };
 
 hud.onBack = () => {
+  if (activeMachine && activeMachine.engine) {
+    activeMachine.stopGame();
+  }
   if (gameManager.currentMachine?.state === 'playing') {
     gameManager.stopGame();
   }
@@ -356,6 +415,10 @@ canvas.addEventListener('mousemove', (event) => {
   let newHovered = null;
   if (intersects.length > 0) {
     newHovered = intersects[0].object.userData.machine || null;
+    // Also check for pinball table
+    if (!newHovered && intersects[0].object.userData.pinball) {
+      newHovered = intersects[0].object.userData.pinball;
+    }
   }
 
   if (newHovered !== hoveredMachine) {
@@ -391,6 +454,44 @@ canvas.addEventListener('click', (event) => {
   const intersects = raycaster.intersectObjects(clickableMeshes);
 
   if (intersects.length > 0) {
+    // Check for pinball table click
+    const pinball = intersects[0].object.userData.pinball;
+    if (pinball && cameraCtrl.isIso()) {
+      // Unhighlight
+      if (hoveredMachine) hoveredMachine.unhighlight();
+      hoveredMachine = null;
+      canvas.style.cursor = 'default';
+
+      if (pinball.state === 'empty') {
+        // Open card panel for pinball
+        activeMachine = pinball;
+        cardUI.hideCardBar();
+        cardUI.show();
+      } else if (pinball.state === 'ready') {
+        // Start playing pinball
+        activeMachine = pinball;
+        cameraCtrl.zoomTo(pinball);
+        cardUI.hideCardBar();
+        hud.showBackButton();
+        pinball.startGame(
+          (pts) => { /* live score */ },
+          (score) => {
+            const coinsEarned = Math.floor(score / 10);
+            gameState.coins += coinsEarned;
+            save();
+            hud.showGameOver(score, coinsEarned);
+          }
+        );
+      } else if (pinball.state === 'occupied_npc') {
+        activeMachine = pinball;
+        cameraCtrl.zoomTo(pinball);
+        cardUI.hideCardBar();
+        hud.showBackButton();
+        hud.showKickButton();
+      }
+      return; // Don't process as arcade machine
+    }
+
     const machine = intersects[0].object.userData.machine;
     if (!machine) return;
 
@@ -447,6 +548,9 @@ function startPlaying(machine) {
 // Keyboard input forwarding
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (activeMachine && activeMachine.engine) {
+      activeMachine.stopGame();
+    }
     if (gameManager.currentMachine?.state === 'playing') {
       gameManager.stopGame();
     }
@@ -460,12 +564,21 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Pinball input
+  if (activeMachine && activeMachine.engine) {
+    activeMachine.handleInput(e.key, true);
+  }
+
   if (gameManager.currentMachine?.state === 'playing') {
     gameManager.forwardInput('keydown', e.key, e.code);
   }
 });
 
 document.addEventListener('keyup', (e) => {
+  if (activeMachine && activeMachine.engine) {
+    activeMachine.handleInput(e.key, false);
+  }
+
   if (gameManager.currentMachine?.state === 'playing') {
     gameManager.forwardInput('keyup', e.key, e.code);
   }
@@ -489,6 +602,7 @@ function animate() {
   cameraCtrl.update();
   gameManager.updateMachineTexture();
   npcManager.update(dt);
+  if (arcadeRoom.pinballTable) arcadeRoom.pinballTable.update(dt);
   hud.updateNpcDisplay(reputation.getReputation(), npcManager.getNpcCount());
 
   renderer.render(scene, camera);
