@@ -171,10 +171,12 @@ export class NPC {
     const t = this._animTime;
 
     const isWalking =
+      this.state === STATES.SPAWNING ||
       this.state === STATES.ENTERING ||
       this.state === STATES.WALKING_TO_MACHINE ||
       this.state === STATES.BROWSING ||
-      this.state === STATES.LEAVING;
+      this.state === STATES.LEAVING ||
+      this.state === STATES.DESPAWNING;
 
     // Reset transforms each frame (we set absolute values)
     this.parts.leftLegPivot.rotation.x = 0;
