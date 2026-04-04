@@ -6,7 +6,10 @@ export const CARDS = {
     { id: 'puzzle', name: 'Puzzle', icon: '🧩', category: 'genre', desc: 'Solve logic challenges' },
     { id: 'runner', name: 'Runner', icon: '💨', category: 'genre', desc: 'Endless running action' },
     { id: 'dodge', name: 'Dodge', icon: '⚡', category: 'genre', desc: 'Avoid all obstacles' },
-    { id: 'pinball', name: 'Pinball', icon: '🎯', category: 'genre', desc: 'Flippers, bumpers, and ball physics' },
+    { id: 'pinball-classic', name: 'Classic Pinball', icon: '🎯', category: 'genre', desc: 'Traditional 3-ball pinball' },
+    { id: 'pinball-roguelike', name: 'Roguelike Pinball', icon: '🎲', category: 'genre', desc: 'Table changes on ball loss' },
+    { id: 'pinball-hyper', name: 'Hyper Pinball', icon: '⚡', category: 'genre', desc: '2x gravity, 3x scoring, chaos' },
+    { id: 'pinball-multiball', name: 'Multiball', icon: '🔴', category: 'genre', desc: 'Multiple balls, pure madness' },
   ],
   theme: [
     { id: 'neon', name: 'Neon', icon: '🌈', category: 'theme', desc: 'Glowing neon cyberpunk' },

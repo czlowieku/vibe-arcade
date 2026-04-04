@@ -19,7 +19,10 @@ const GENRE_DESC = {
   puzzle: 'puzzle game — matching, sorting, or pattern logic',
   runner: 'endless runner — auto-move forward, dodge obstacles',
   dodge: 'dodge game — avoid falling/flying obstacles, survive',
-  pinball: 'pinball machine — flippers, bumpers, ramps, ball physics, score multipliers',
+  'pinball-classic': 'classic pinball — 3 balls, bumpers, ramps, standard scoring',
+  'pinball-roguelike': 'roguelike pinball — layout randomizes on ball loss, difficulty scales',
+  'pinball-hyper': 'hyper pinball — 2x gravity, 3x scoring, extremely fast ball',
+  'pinball-multiball': 'multiball pinball — starts with 2 balls, new ball every 30s, max 5',
 };
 const THEME_DESC = {
   neon: 'neon cyberpunk — glowing outlines, dark bg, cyan/magenta/yellow',
