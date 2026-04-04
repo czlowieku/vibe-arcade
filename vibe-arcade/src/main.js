@@ -165,11 +165,53 @@ const cardUI = new CardUI(
     cameraCtrl.zoomOut();
     cardUI.showCardBar();
     hud.hideBackButton();
+    hideMachineCards();
     activeMachine = null;
   }
 );
 
 const hud = new HUD(gameState, save);
+
+function showMachineCards(machine) {
+  const container = document.getElementById('machine-cards');
+  container.replaceChildren();
+  const saved = gameState.machines[machine.index];
+  if (!saved?.recipe) { container.classList.add('hidden'); return; }
+
+  const { genre, theme, modifier } = saved.recipe;
+  if (genre) {
+    const card = getCardById(genre);
+    if (card) {
+      const tag = document.createElement('span');
+      tag.className = 'machine-card-tag genre';
+      tag.textContent = `${card.icon} ${card.name}`;
+      container.appendChild(tag);
+    }
+  }
+  if (theme) {
+    const card = getCardById(theme);
+    if (card) {
+      const tag = document.createElement('span');
+      tag.className = 'machine-card-tag theme';
+      tag.textContent = `${card.icon} ${card.name}`;
+      container.appendChild(tag);
+    }
+  }
+  if (modifier) {
+    const card = getCardById(modifier);
+    if (card) {
+      const tag = document.createElement('span');
+      tag.className = 'machine-card-tag modifier';
+      tag.textContent = `${card.icon} ${card.name}`;
+      container.appendChild(tag);
+    }
+  }
+  container.classList.remove('hidden');
+}
+
+function hideMachineCards() {
+  document.getElementById('machine-cards').classList.add('hidden');
+}
 
 hud.onPlayAgain = () => {
   if (activeMachine && activeMachine.gameCode) {
@@ -186,6 +228,7 @@ hud.onBackToArcade = () => {
   activeMachine = null;
   hud.hideBackButton();
   hud.hideReviewsButton();
+  hideMachineCards();
   document.getElementById('btn-suggestions').classList.add('hidden');
   cardUI.showCardBar();
   hud.updateDisplay();
@@ -202,6 +245,7 @@ hud.onBack = () => {
   activeMachine = null;
   hud.hideBackButton();
   hud.hideReviewsButton();
+  hideMachineCards();
   hud.hideKickButton();
   document.getElementById('btn-suggestions').classList.add('hidden');
   cardUI.showCardBar();
@@ -228,6 +272,7 @@ hud.onNewGame = () => {
     cameraCtrl.zoomOut();
     hud.hideBackButton();
     hud.hideGameOver();
+    hideMachineCards();
     document.getElementById('btn-suggestions').classList.add('hidden');
 
     // Slight delay so camera starts zooming, then open panel
@@ -502,6 +547,7 @@ canvas.addEventListener('click', (event) => {
         cardUI.hideCardBar();
         hud.showBackButton();
         hud.showReviewsButton();
+        showMachineCards(machine);
         if (machine.suggestions && machine.suggestions.length > 0) {
           document.getElementById('btn-suggestions').classList.remove('hidden');
           document.getElementById('btn-suggestions').textContent = `💡 SUGGESTIONS (${machine.suggestions.length})`;
@@ -511,6 +557,7 @@ canvas.addEventListener('click', (event) => {
         cameraCtrl.zoomTo(machine);
         cardUI.hideCardBar();
         hud.showBackButton();
+        showMachineCards(machine);
       } else if (machine.state === 'occupied_npc') {
         activeMachine = machine;
         cameraCtrl.zoomTo(machine);
@@ -518,6 +565,7 @@ canvas.addEventListener('click', (event) => {
         hud.showBackButton();
         hud.showReviewsButton();
         hud.showKickButton();
+        showMachineCards(machine);
       }
     } else if (cameraCtrl.isZoomed() && machine === activeMachine) {
       if (machine.state === 'ready') {
@@ -673,6 +721,7 @@ document.addEventListener('keydown', (e) => {
       hud.hideBackButton();
       hud.hideReviewsButton();
       hud.hideGameOver();
+      hideMachineCards();
       document.getElementById('btn-suggestions').classList.add('hidden');
       cardUI.showCardBar();
     }

@@ -1274,3 +1274,45 @@ body.dragging-card #arcade-canvas {
 #btn-reviews:hover {
   background: rgba(41,128,185,0.08) !important;
 }
+
+/* Machine recipe cards */
+#machine-cards {
+  position: absolute;
+  top: 100px;
+  left: 24px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: 300px;
+}
+
+.machine-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.machine-card-tag.genre {
+  background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+  border: 1px solid #e74c3c;
+  color: #c0392b;
+}
+
+.machine-card-tag.theme {
+  background: linear-gradient(135deg, #f0f7ff, #dceeff);
+  border: 1px solid #3498db;
+  color: #2471a3;
+}
+
+.machine-card-tag.modifier {
+  background: linear-gradient(135deg, #fff9f0, #ffecd2);
+  border: 1px solid #e67e22;
+  color: #d35400;
+}
