@@ -103,10 +103,24 @@
       </div>
     </div>
 
+    <!-- API Key Settings Panel -->
+    <div id="api-key-panel" class="hidden">
+      <div id="api-key-panel-inner">
+        <h2>🔑 API KEY</h2>
+        <p>Enter your Anthropic API key to generate games. Your key is stored locally in your browser and sent to the server only for generation requests.</p>
+        <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" />
+        <div id="api-key-actions">
+          <button id="btn-save-key">💾 SAVE</button>
+          <button id="btn-cancel-key">✕ CANCEL</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Buy Pack + Collection Buttons -->
     <div id="buy-pack" class="hidden">
       <button id="btn-buy-pack">📦 BUY PACK (100 💰)</button>
       <button id="btn-collection">📖 COLLECTION</button>
+      <button id="btn-api-key">🔑 API KEY</button>
     </div>
 
     <!-- Card Collection Panel -->

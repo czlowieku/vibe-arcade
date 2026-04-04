@@ -1,5 +1,6 @@
 import { getCardById } from './card-system.js';
 import { GameSandbox } from './game-sandbox.js';
+import { getApiKey } from './storage.js';
 
 export class GameManager {
   constructor(gameState, saveCallback) {
@@ -35,6 +36,7 @@ export class GameManager {
             modifier: recipe.modifier?.stars || 0,
           },
           extraInstructions,
+          apiKey: getApiKey(),
         }),
       });
 
