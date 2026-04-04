@@ -689,9 +689,11 @@ export class NpcManager {
         }
       }
 
-      // NPC vs walls (keep inside arcade bounds)
-      a.group.position.x = Math.max(-7.5, Math.min(7.5, a.group.position.x));
-      a.group.position.z = Math.max(-7.5, Math.min(13, a.group.position.z));
+      // NPC vs walls (keep inside arcade bounds — but let leaving NPCs go)
+      if (!LEAVING_STATES.includes(a.state)) {
+        a.group.position.x = Math.max(-7.5, Math.min(7.5, a.group.position.x));
+        a.group.position.z = Math.max(-7.5, Math.min(13, a.group.position.z));
+      }
     }
   }
 
