@@ -1,0 +1,85 @@
+<h2>Jak wygląda przestrzeń arcade?</h2>
+<p class="subtitle">Gracz nawiguje po swoim arcade w Three.js — w jakim stylu?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>🏠 Izometryczny pokój</h3>
+      <p>Widok z góry pod kątem (jak Habbo Hotel / The Sims). Automaty arcade stoją w pokoju. Klikasz na automat żeby zagrać. Łatwe do zbudowania, czytelne.</p>
+      <div class="mockup">
+        <div class="mockup-header">Izometryczny widok</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.3;padding:20px;background:#1a1a2e;color:#e0e0e0;">
+<pre style="margin:0;color:#888;">
+      ╱‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾╲
+     ╱  🎮  ┌──┐  🎮  ┌──┐   ╲
+    ╱       │▓▓│      │▓▓│     ╲
+   ╱   🎮   └──┘  🎮  └──┘      ╲
+  ╱        ┌──┐       ┌──┐       ╲
+ ╱         │▓▓│       │▓▓│        ╲
+╱          └──┘       └──┘         ╲
+╲     🧑 ←gracz                   ╱
+ ╲                                ╱
+  ╲______________________________╱
+</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>👁️ First-Person 3D</h3>
+      <p>Chodzisz po arcade w pierwszej osobie (jak klasyczne FPS). Podchodzisz do automatu, klikasz E żeby zagrać. Immersyjne ale trudniejsze w implementacji.</p>
+      <div class="mockup">
+        <div class="mockup-header">First-Person widok</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.3;padding:20px;background:#1a1a2e;color:#e0e0e0;">
+<pre style="margin:0;color:#888;">
+  ┌─────────────────────────────────┐
+  │  ╱‾‾‾‾╲    ╱‾‾‾‾╲    ╱‾‾‾‾╲   │
+  │  │ ▓▓▓ │   │ ▓▓▓ │   │ ▓▓▓ │  │
+  │  │ ▓▓▓ │   │ ▓▓▓ │   │ ▓▓▓ │  │
+  │  │_____│   │_____│   │_____│  │
+  │  ╱     ╲   ╱     ╲   ╱     ╲  │
+  │ ╱       ╲ ╱       ╲ ╱       ╲ │
+  │╱ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ╲│
+  │▓▓▓▓▓▓▓▓▓▓▓▓ FLOOR ▓▓▓▓▓▓▓▓▓▓│
+  │   [E] Press to play NEON RUN   │
+  └─────────────────────────────────┘
+</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>📋 Flat UI + 3D preview</h3>
+      <p>Menu/dashboard 2D z listą automatów. Kliknięcie pokazuje 3D podgląd automatu + przycisk "Play". Najszybszy do zbudowania, skupia się na gameplay a nie na nawigacji.</p>
+      <div class="mockup">
+        <div class="mockup-header">Dashboard widok</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.3;padding:20px;background:#1a1a2e;color:#e0e0e0;">
+<pre style="margin:0;color:#888;">
+┌──────────────────────────────────┐
+│ 🏪 MY ARCADE          💰 1250   │
+├──────────┬───────────────────────┤
+│ MACHINES │  ┌─────────────────┐  │
+│ ┌──────┐ │  │   ╱‾‾‾‾‾‾‾╲    │  │
+│ │ Neon │ │  │   │ NEON    │    │  │
+│ │ Run  │◄│  │   │  RUN    │    │  │
+│ └──────┘ │  │   │_________│    │  │
+│ ┌──────┐ │  │                  │  │
+│ │Space │ │  │  ⭐ Best: 4200   │  │
+│ │Dodge │ │  │  🎮 [PLAY]      │  │
+│ └──────┘ │  └─────────────────┘  │
+│          │                       │
+│ [+ NEW]  │  🃏 Cards: 12/50     │
+└──────────┴───────────────────────┘
+</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

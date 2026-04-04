@@ -1,0 +1,74 @@
+<h2>Podejście do implementacji MVP</h2>
+<p class="subtitle">Jak technicznie zbudować to, żeby działało i było rozszerzalne?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>🔥 Hybrid (Rekomendowane)</h3>
+      <p>Three.js dla arcade room + HTML/CSS overlay dla mini-gier. AI generuje mini-gry jako czysty HTML+JS+Canvas. Kamera zoomuje na automat, potem HTML overlay "przykleja się" do ekranu automatu.</p>
+      <ul>
+        <li><strong>Three.js</strong>: izometryczny pokój, automaty, animacje kamery</li>
+        <li><strong>HTML overlay</strong>: karty UI, mini-gry, HUD</li>
+        <li><strong>Node.js backend</strong>: proxy do Claude API</li>
+        <li><strong>localStorage</strong>: karty, score, stan arcade</li>
+      </ul>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>AI łatwo generuje HTML+JS+Canvas</li>
+          <li>Mini-gry mogą być dowolnie złożone</li>
+          <li>Szybki dev time (~2-3 sesje)</li>
+          <li>Dobrze wygląda</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Przejście 3D→overlay wymaga finezji</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>🎮 Full Three.js</h3>
+      <p>Wszystko w Three.js — mini-gry też renderują się jako Canvas texture na ekranie automatu. Pełna immersja, ale AI musi generować Three.js code.</p>
+      <ul>
+        <li><strong>Three.js</strong>: cała gra, mini-gry jako CanvasTexture</li>
+        <li><strong>AI generuje</strong>: Three.js/Canvas2D kod mini-gier</li>
+      </ul>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Pełna immersja — bez "przeskoku"</li>
+          <li>Spójna estetyka</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>AI trudniej generuje Three.js niż HTML</li>
+          <li>Ograniczona rozdzielczość na texture</li>
+          <li>Wolniejszy development</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>⚡ Quick & Dirty</h3>
+      <p>2D arcade (HTML+CSS grid), mini-gry w iframe. Zero Three.js na start — dodajemy 3D later. Najszybszy start.</p>
+      <ul>
+        <li><strong>HTML/CSS</strong>: pixel-art arcade room</li>
+        <li><strong>iframe</strong>: mini-gry w sandbox iframe</li>
+      </ul>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Gotowe w 1 sesję</li>
+          <li>Najprostsze technicznie</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Brak "wow" efektu</li>
+          <li>Trzeba potem przepisywać na 3D</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

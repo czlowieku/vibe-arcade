@@ -1,0 +1,83 @@
+<h2>Jak mini-gra się wyświetla?</h2>
+<p class="subtitle">Gracz kliknął automat — co się dzieje z ekranem?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>🖥️ Fullscreen takeover</h3>
+      <p>Mini-gra przejmuje cały ekran. Po zakończeniu wraca do arcade. Proste, daje mini-grze max przestrzeni.</p>
+      <div class="mockup">
+        <div class="mockup-header">Fullscreen</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:11px;line-height:1.3;padding:16px;background:#0a0a1a;color:#0f0;">
+<pre style="margin:0;">
+┌──────────────────────────────────┐
+│         ★ NEON RUN ★             │
+│                                  │
+│    ◄ ══════════════════ ►        │
+│         🏃 ←player               │
+│    ▓▓▓▓     ▓▓▓▓▓    ▓▓▓        │
+│  ▓▓▓▓▓▓▓  ▓▓▓▓▓▓▓  ▓▓▓▓▓       │
+│                                  │
+│  Score: 1250    ❤️❤️❤️            │
+│  [ESC] Back to arcade            │
+└──────────────────────────────────┘
+</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>📺 Na ekranie automatu (w 3D)</h3>
+      <p>Kamera zoomuje na automat. Mini-gra renderuje się na "ekranie" automatu w scenie 3D. Immersyjne ale technicznie trudniejsze.</p>
+      <div class="mockup">
+        <div class="mockup-header">Zoom na automat</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:11px;line-height:1.3;padding:16px;background:#1a1a2e;color:#e0e0e0;">
+<pre style="margin:0;">
+┌──────────────────────────────────┐
+│                                  │
+│        ╱‾‾‾‾‾‾‾‾‾‾‾‾╲           │
+│       │ ★ NEON RUN ★  │          │
+│       │  🏃  ▓▓  ▓▓   │          │
+│       │  Score: 1250   │          │
+│       │________________│          │
+│       ╱  [🕹️ joystick] ╲         │
+│      ╱__________________╲        │
+│                                  │
+│   ▓▓▓▓ floor ▓▓▓▓▓▓▓▓▓▓▓▓▓      │
+└──────────────────────────────────┘
+</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>🪟 Modal overlay</h3>
+      <p>Arcade zostaje w tle (zaciemnione). Mini-gra wyświetla się w dużym oknie modalnym na środku. Łatwe technicznie, arcade widoczne w tle.</p>
+      <div class="mockup">
+        <div class="mockup-header">Modal overlay</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:11px;line-height:1.3;padding:16px;background:#1a1a2e;color:#e0e0e0;">
+<pre style="margin:0;">
+┌──────────────────────────────────┐
+│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
+│░░ ┌────────────────────────┐ ░░░│
+│░░ │    ★ NEON RUN ★        │ ░░░│
+│░░ │   🏃  ▓▓   ▓▓         │ ░░░│
+│░░ │   Score: 1250  ❤️❤️❤️   │ ░░░│
+│░░ │                        │ ░░░│
+│░░ │   [X] Close            │ ░░░│
+│░░ └────────────────────────┘ ░░░│
+│░░░░░ (arcade w tle) ░░░░░░░░░░░│
+└──────────────────────────────────┘
+</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

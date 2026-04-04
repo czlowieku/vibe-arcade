@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Arcade</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="arcade-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div id="hud-left">
+        <span id="arcade-name">🏪 VIBE ARCADE</span>
+      </div>
+      <div id="hud-right">
+        <span id="coins-display">💰 <span id="coins-value">0</span></span>
+        <span id="level-display">⭐ Lv.<span id="level-value">1</span></span>
+      </div>
+    </div>
+
+    <!-- Card Bar (bottom) -->
+    <div id="card-bar" class="hidden">
+      <div id="card-bar-cards"></div>
+    </div>
+
+    <!-- Card Creation Panel -->
+    <div id="create-panel" class="hidden">
+      <div id="create-panel-inner">
+        <h2>🎮 CREATE A GAME</h2>
+        <div id="recipe-slots">
+          <div class="recipe-slot" data-category="genre">
+            <div class="slot-label">GENRE</div>
+            <div class="slot-card empty">?</div>
+          </div>
+          <div class="recipe-slot" data-category="theme">
+            <div class="slot-label">THEME</div>
+            <div class="slot-card empty">?</div>
+          </div>
+          <div class="recipe-slot" data-category="modifier">
+            <div class="slot-label">MODIFIER</div>
+            <div class="slot-card empty">?</div>
+          </div>
+        </div>
+        <div id="available-cards"></div>
+        <div id="create-actions">
+          <button id="btn-generate" disabled>⚡ GENERATE</button>
+          <button id="btn-cancel">✕ CANCEL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt Preview Panel -->
+    <div id="prompt-panel" class="hidden">
+      <div id="prompt-panel-inner">
+        <h2>🧠 PROMPT PREVIEW</h2>
+        <div id="prompt-summary"></div>
+        <div id="prompt-extra-label">EXTRA INSTRUCTIONS FOR AI:</div>
+        <textarea id="prompt-extra" rows="4" placeholder="e.g. 'add flying cats as enemies' or 'make it pixel art style'..."></textarea>
+        <div id="prompt-actions">
+          <button id="btn-start-coding">⚡ START CODING</button>
+          <button id="btn-prompt-back">← BACK TO CARDS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modify Game Panel -->
+    <div id="modify-panel" class="hidden">
+      <div id="modify-panel-inner">
+        <h2>✏️ MODIFY GAME</h2>
+        <p id="modify-current-title"></p>
+        <textarea id="modify-instructions" rows="4" placeholder="e.g. 'make it faster' or 'add a boss enemy' or 'change colors to red and blue'..."></textarea>
+        <div id="modify-actions">
+          <button id="btn-do-modify">⚡ REGENERATE</button>
+          <button id="btn-modify-cancel">← CANCEL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over" class="hidden">
+      <div id="game-over-inner">
+        <h2>GAME OVER</h2>
+        <div id="final-score">0</div>
+        <div id="coins-earned">+0 💰</div>
+        <div id="game-over-actions">
+          <button id="btn-play-again">🔄 PLAY AGAIN</button>
+          <button id="btn-back-arcade">🏪 BACK TO ARCADE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Pack Overlay -->
+    <div id="card-pack" class="hidden">
+      <div id="card-pack-inner">
+        <h2>📦 CARD PACK</h2>
+        <div id="pack-cards"></div>
+        <button id="btn-close-pack">OK</button>
+      </div>
+    </div>
+
+    <!-- Buy Pack + Collection Buttons -->
+    <div id="buy-pack" class="hidden">
+      <button id="btn-buy-pack">📦 BUY PACK (100 💰)</button>
+      <button id="btn-collection">📖 COLLECTION</button>
+    </div>
+
+    <!-- Card Collection Panel -->
+    <div id="collection-panel" class="hidden">
+      <div id="collection-panel-inner">
+        <h2>📖 CARD COLLECTION</h2>
+        <div id="collection-progress"></div>
+        <div id="collection-section-genre"><h3>GENRE</h3><div class="collection-grid"></div></div>
+        <div id="collection-section-theme"><h3>THEME</h3><div class="collection-grid"></div></div>
+        <div id="collection-section-modifier"><h3>MODIFIER</h3><div class="collection-grid"></div></div>
+        <button id="btn-close-collection">CLOSE</button>
+      </div>
+    </div>
+
+    <!-- Back button when zoomed -->
+    <div id="back-button" class="hidden">
+      <button id="btn-back">← BACK</button>
+      <button id="btn-modify-game">✏️ MODIFY</button>
+      <button id="btn-new-game">🔄 NEW GAME</button>
+    </div>
+
+    <!-- Iframe sandbox container (hidden) -->
+    <div id="sandbox-container"></div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

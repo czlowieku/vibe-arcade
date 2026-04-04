@@ -1,0 +1,863 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #f5f0e6;
+  color: #2d2d2d;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#arcade-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* HUD */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.6) 70%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+  border-bottom: 2px solid rgba(0,0,0,0.05);
+}
+
+#hud span {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#arcade-name {
+  color: #c0392b;
+  font-size: 20px !important;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+#coins-display {
+  color: #d4880f;
+  margin-right: 20px;
+}
+
+#level-display {
+  color: #2980b9;
+}
+
+/* Card Bar */
+#card-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 20px;
+  background: linear-gradient(0deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 80%, transparent 100%);
+  z-index: 10;
+}
+
+#card-bar-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Cards */
+.card {
+  width: 80px;
+  height: 110px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-size: 11px;
+  text-align: center;
+  padding: 6px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+
+.card.genre {
+  background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+  border: 2px solid #e74c3c;
+  color: #c0392b;
+}
+
+.card.theme {
+  background: linear-gradient(135deg, #f0f7ff, #dceeff);
+  border: 2px solid #3498db;
+  color: #2471a3;
+}
+
+.card.modifier {
+  background: linear-gradient(135deg, #fff9f0, #ffecd2);
+  border: 2px solid #e67e22;
+  color: #d35400;
+}
+
+.card .card-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.card .card-name {
+  font-weight: bold;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card .card-stars {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 8px;
+  color: #f39c12;
+}
+
+.card.selected {
+  transform: translateY(-8px) scale(1.1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+/* Create Panel */
+#create-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+
+#create-panel-inner {
+  text-align: center;
+  max-width: 600px;
+  width: 90%;
+}
+
+#create-panel h2 {
+  color: #c0392b;
+  font-size: 26px;
+  margin-bottom: 30px;
+  letter-spacing: 3px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#recipe-slots {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.recipe-slot {
+  text-align: center;
+}
+
+.slot-label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+.slot-card {
+  width: 90px;
+  height: 120px;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #bbb;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  background: rgba(255,255,255,0.6);
+}
+
+.slot-card:hover {
+  border-color: #999;
+}
+
+.slot-card.filled {
+  border-style: solid;
+}
+
+#available-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  min-height: 120px;
+}
+
+#create-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#create-actions button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+#btn-generate {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  font-weight: bold;
+}
+
+#btn-generate:disabled {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+#btn-generate:not(:disabled):hover {
+  box-shadow: 0 4px 16px rgba(231,76,60,0.4);
+  transform: scale(1.05);
+}
+
+#btn-cancel {
+  background: #e8e4dc;
+  color: #555;
+}
+
+#btn-cancel:hover {
+  background: #ddd8ce;
+}
+
+/* Prompt Panel */
+#prompt-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+
+#prompt-panel-inner {
+  max-width: 600px;
+  width: 90%;
+  text-align: center;
+}
+
+#prompt-panel h2 {
+  color: #2980b9;
+  font-size: 22px;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+#prompt-summary {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #444;
+}
+
+#prompt-summary .tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: bold;
+  margin: 0 4px;
+}
+
+#prompt-summary .tag-genre { background: rgba(231,76,60,0.12); color: #c0392b; }
+#prompt-summary .tag-theme { background: rgba(52,152,219,0.12); color: #2471a3; }
+#prompt-summary .tag-modifier { background: rgba(243,156,18,0.12); color: #d35400; }
+
+#prompt-extra-label {
+  text-align: left;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+#prompt-extra {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #333;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  padding: 12px;
+  resize: vertical;
+  margin-bottom: 20px;
+}
+
+#prompt-extra:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52,152,219,0.15);
+}
+
+#prompt-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#btn-start-coding {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3498db, #2471a3);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+
+#btn-start-coding:hover {
+  box-shadow: 0 4px 16px rgba(52,152,219,0.4);
+  transform: scale(1.05);
+}
+
+#btn-prompt-back {
+  padding: 12px 24px;
+  background: #e8e4dc;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#btn-prompt-back:hover {
+  background: #ddd8ce;
+}
+
+/* Modify Panel */
+#modify-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+
+#modify-panel-inner {
+  max-width: 550px;
+  width: 90%;
+  text-align: center;
+}
+
+#modify-panel h2 {
+  color: #e67e22;
+  font-size: 22px;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+#modify-current-title {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+#modify-instructions {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #333;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  padding: 12px;
+  resize: vertical;
+  margin-bottom: 20px;
+}
+
+#modify-instructions:focus {
+  outline: none;
+  border-color: #e67e22;
+  box-shadow: 0 0 0 3px rgba(230,126,34,0.15);
+}
+
+#modify-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#btn-do-modify {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#btn-do-modify:hover {
+  box-shadow: 0 4px 16px rgba(230,126,34,0.4);
+  transform: scale(1.05);
+}
+
+#btn-modify-cancel {
+  padding: 12px 24px;
+  background: #e8e4dc;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#btn-modify-cancel:hover {
+  background: #ddd8ce;
+}
+
+#btn-modify-game {
+  border-color: #e67e22 !important;
+  color: #e67e22 !important;
+}
+
+#btn-modify-game:hover {
+  background: rgba(230,126,34,0.1) !important;
+}
+
+/* Game Over */
+#game-over {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  backdrop-filter: blur(4px);
+}
+
+#game-over-inner {
+  text-align: center;
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  padding: 40px 50px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+
+#game-over h2 {
+  color: #c0392b;
+  font-size: 42px;
+  margin-bottom: 16px;
+  letter-spacing: 4px;
+  font-weight: 900;
+}
+
+#final-score {
+  font-size: 56px;
+  color: #2c3e50;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+#coins-earned {
+  font-size: 22px;
+  color: #d4880f;
+  margin-bottom: 28px;
+  font-weight: 600;
+}
+
+#game-over-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#game-over-actions button {
+  padding: 12px 24px;
+  border: 2px solid;
+  border-radius: 8px;
+  background: transparent;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+#btn-play-again {
+  border-color: #27ae60;
+  color: #27ae60;
+}
+
+#btn-play-again:hover {
+  background: rgba(39,174,96,0.08);
+  box-shadow: 0 2px 12px rgba(39,174,96,0.2);
+}
+
+#btn-back-arcade {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+#btn-back-arcade:hover {
+  background: rgba(231,76,60,0.08);
+  box-shadow: 0 2px 12px rgba(231,76,60,0.2);
+}
+
+/* Card Pack */
+#card-pack {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  backdrop-filter: blur(8px);
+}
+
+#card-pack-inner {
+  text-align: center;
+}
+
+#card-pack h2 {
+  color: #d4880f;
+  font-size: 28px;
+  margin-bottom: 30px;
+  font-weight: 800;
+}
+
+#pack-cards {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+#pack-cards .card {
+  width: 100px;
+  height: 140px;
+  animation: cardReveal 0.5s ease-out backwards;
+}
+
+#pack-cards .card:nth-child(2) { animation-delay: 0.2s; }
+#pack-cards .card:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes cardReveal {
+  from { transform: scale(0) rotateY(180deg); opacity: 0; }
+  to { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+
+#btn-close-pack {
+  padding: 10px 40px;
+  background: linear-gradient(135deg, #f39c12, #d4880f);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Buy Pack */
+#buy-pack {
+  position: absolute;
+  bottom: 80px;
+  right: 24px;
+  z-index: 10;
+}
+
+#btn-buy-pack {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 10px rgba(243,156,18,0.3);
+}
+
+#btn-buy-pack:hover {
+  box-shadow: 0 4px 18px rgba(243,156,18,0.5);
+  transform: scale(1.05);
+}
+
+/* Back button */
+#back-button {
+  position: absolute;
+  top: 60px;
+  left: 24px;
+  z-index: 10;
+}
+
+#back-button {
+  display: flex;
+  gap: 8px;
+}
+
+#btn-back, #btn-new-game {
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(0,0,0,0.15);
+  color: #444;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+#btn-back:hover, #btn-new-game:hover {
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+#btn-new-game {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+#btn-new-game:hover {
+  background: rgba(231,76,60,0.06);
+}
+
+/* Collection Panel */
+#collection-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.97);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 25;
+  backdrop-filter: blur(8px);
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+
+#collection-panel-inner {
+  max-width: 700px;
+  width: 100%;
+}
+
+#collection-panel h2 {
+  text-align: center;
+  color: #8e44ad;
+  font-size: 24px;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+#collection-progress {
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+#collection-panel h3 {
+  color: #555;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+}
+
+.collection-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.collection-card {
+  width: 100px;
+  height: 130px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.collection-card.owned {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+
+.collection-card.locked {
+  opacity: 0.35;
+  filter: grayscale(0.8);
+}
+
+.collection-card.locked .card-icon {
+  font-size: 28px;
+  filter: grayscale(1);
+}
+
+.collection-card .card-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.collection-card .card-name {
+  font-weight: bold;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.collection-card .card-desc {
+  font-size: 9px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.collection-card .card-stars {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  color: #f39c12;
+}
+
+.collection-card .locked-label {
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.collection-card.genre.owned { background: linear-gradient(135deg, #fff5f5, #ffe0e0); border: 2px solid #e74c3c; }
+.collection-card.theme.owned { background: linear-gradient(135deg, #f0f7ff, #dceeff); border: 2px solid #3498db; }
+.collection-card.modifier.owned { background: linear-gradient(135deg, #fff9f0, #ffecd2); border: 2px solid #e67e22; }
+
+.collection-card.genre.locked { background: #f0eded; border: 2px dashed #ccc; }
+.collection-card.theme.locked { background: #edf0f3; border: 2px dashed #ccc; }
+.collection-card.modifier.locked { background: #f3f0ed; border: 2px dashed #ccc; }
+
+#btn-close-collection {
+  display: block;
+  margin: 0 auto;
+  padding: 10px 32px;
+  background: #e8e4dc;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-close-collection:hover {
+  background: #ddd8ce;
+}
+
+#btn-collection {
+  background: linear-gradient(135deg, #8e44ad, #6c3483) !important;
+  color: white !important;
+}
+
+#btn-collection:hover {
+  box-shadow: 0 4px 16px rgba(142,68,173,0.3) !important;
+}
+
+/* Sandbox */
+#sandbox-container {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  width: 800px;
+  height: 600px;
+}
+
+/* Utility */
+.hidden {
+  display: none !important;
+}
+
+/* Loading text on machines */
+.loading-text {
+  color: #3498db;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}

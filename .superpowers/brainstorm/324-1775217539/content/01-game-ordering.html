@@ -1,0 +1,52 @@
+<h2>Jak gracz zamawia mini-grę od AI?</h2>
+<p class="subtitle">To jest core mechanic MVP — od tego zależy cały gameplay loop</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>🎰 Slot Machine / Losowe tokeny</h3>
+      <p>Gracz kręci "kołem fortuny" i dostaje losowe parametry: gatunek + mechanika + motyw. Np. "Platformówka + Grawitacja + Kosmos". Może re-rollować za walutę.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Zaskoczenie i replayability</li><li>Łatwe do zbalansowania</li><li>Nie wymaga kreatywności gracza</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Mniej kontroli gracza</li><li>Może frustrować złymi combo</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>🃏 Deck Builder / Karty</h3>
+      <p>Gracz zbiera karty (mechanik, motywów, modyfikatorów) i składa z nich "przepis" na grę. Nowe karty zdobywa za granie. Np. karta "Strzelanie" + karta "Neon" + karta "Boss Fight".</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Głęboka progresja</li><li>Strategia w budowaniu decku</li><li>Gracz czuje się twórcą</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Więcej UI do zbudowania</li><li>Balansowanie kart</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>💬 Free Prompt</h3>
+      <p>Gracz pisze wolny tekst opisujący jaką grę chce. AI interpretuje i generuje. Jak ChatGPT ale w kontekście gry.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Pełna wolność twórcza</li><li>Najbardziej "vibe" doświadczenie</li><li>Prosty UI</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Nieprzewidywalna jakość</li><li>Brak struktury progresji</li><li>Gracz musi być kreatywny</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>🎯 Hybrid: Tokeny + Prompt</h3>
+      <p>Gracz wybiera bazowe tokeny (gatunek, trudność) ale może dodać wolny tekst jako "flavor". Np. wybiera "Platformówka + Łatwa" i dopisuje "ale żeby były koty jako postacie".</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Struktura + wolność</li><li>Łatwiej kontrolować jakość AI output</li><li>Progresja przez odblokowanie tokenów</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Średnio złożony UI</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+{
+  "name": "vibe-arcade",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.js",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "express": "^4.21.0",
+    "three": "^0.170.0"
+  }
+}
