@@ -66,7 +66,7 @@ export class NPC {
     // We'll root everything at feet level (y=0)
     // Body center: y = 0.35/2 = 0.175
     // Head center: y = 0.35 + 0.2/2 = 0.45
-    head.position.set(0, 0.45, 0);
+    head.position.set(0, 0.8, 0);
     head.castShadow = true;
     this.group.add(head);
     this.parts.head = head;
@@ -75,7 +75,7 @@ export class NPC {
     const bodyGeo = new THREE.BoxGeometry(0.3, 0.35, 0.18);
     const body = new THREE.Mesh(bodyGeo, shirtMat);
     // Body pivot at center, center y = 0.175
-    body.position.set(0, 0.175, 0);
+    body.position.set(0, 0.525, 0);
     body.castShadow = true;
     this.group.add(body);
     this.parts.body = body;
@@ -87,7 +87,7 @@ export class NPC {
 
     // Left leg pivot at hip (body bottom = 0, shifted left)
     const leftLegPivot = new THREE.Group();
-    leftLegPivot.position.set(-0.08, 0, 0);
+    leftLegPivot.position.set(-0.08, 0.35, 0);
     const leftLeg = new THREE.Mesh(legGeo, pantsMat);
     leftLeg.position.set(0, -0.175, 0); // hang down from pivot
     leftLeg.castShadow = true;
@@ -97,7 +97,7 @@ export class NPC {
 
     // Right leg pivot
     const rightLegPivot = new THREE.Group();
-    rightLegPivot.position.set(0.08, 0, 0);
+    rightLegPivot.position.set(0.08, 0.35, 0);
     const rightLeg = new THREE.Mesh(legGeo, pantsMat);
     rightLeg.position.set(0, -0.175, 0);
     rightLeg.castShadow = true;
@@ -111,7 +111,7 @@ export class NPC {
 
     // Left arm pivot at shoulder
     const leftArmPivot = new THREE.Group();
-    leftArmPivot.position.set(-0.19, 0.35, 0);
+    leftArmPivot.position.set(-0.19, 0.7, 0);
     const leftArm = new THREE.Mesh(armGeo, shirtMat);
     leftArm.position.set(0, -0.15, 0);
     leftArm.castShadow = true;
@@ -121,7 +121,7 @@ export class NPC {
 
     // Right arm pivot at shoulder
     const rightArmPivot = new THREE.Group();
-    rightArmPivot.position.set(0.19, 0.35, 0);
+    rightArmPivot.position.set(0.19, 0.7, 0);
     const rightArm = new THREE.Mesh(armGeo, shirtMat);
     rightArm.position.set(0, -0.15, 0);
     rightArm.castShadow = true;
@@ -136,12 +136,12 @@ export class NPC {
       // Brim
       const brimGeo = new THREE.BoxGeometry(0.24, 0.03, 0.26);
       const brim = new THREE.Mesh(brimGeo, capMat);
-      brim.position.set(0, 0.555, 0.02);
+      brim.position.set(0, 0.905, 0.02);
       this.group.add(brim);
       // Crown
       const crownGeo = new THREE.BoxGeometry(0.2, 0.1, 0.2);
       const crown = new THREE.Mesh(crownGeo, capMat);
-      crown.position.set(0, 0.605, -0.01);
+      crown.position.set(0, 0.955, -0.01);
       this.group.add(crown);
       this.parts.hat = crown;
     } else if (hatType === 'flatHair') {
@@ -149,7 +149,7 @@ export class NPC {
       const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.9 });
       const hairGeo = new THREE.BoxGeometry(0.22, 0.05, 0.22);
       const hair = new THREE.Mesh(hairGeo, hairMat);
-      hair.position.set(0, 0.565, 0);
+      hair.position.set(0, 0.915, 0);
       this.group.add(hair);
       this.parts.hat = hair;
     } else if (hatType === 'tallHair') {
@@ -157,7 +157,7 @@ export class NPC {
       const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.9 });
       const hairGeo = new THREE.BoxGeometry(0.2, 0.15, 0.2);
       const hair = new THREE.Mesh(hairGeo, hairMat);
-      hair.position.set(0, 0.625, 0);
+      hair.position.set(0, 0.975, 0);
       this.group.add(hair);
       this.parts.hat = hair;
     }
@@ -183,7 +183,7 @@ export class NPC {
     this.parts.head.rotation.y = 0;
     this.parts.head.rotation.x = 0;
     this.parts.body.rotation.z = 0;
-    this.parts.body.position.y = 0.175;
+    this.parts.body.position.y = 0.525;
 
     if (isWalking && this.walkQueue.length > 0) {
       // Leg swing
@@ -195,8 +195,8 @@ export class NPC {
       this.parts.rightArmPivot.rotation.x = swing * 0.6;
       // Body bob
       const bob = Math.abs(Math.sin(t * 8)) * 0.015;
-      this.parts.body.position.y = 0.175 + bob;
-      this.parts.head.position.y = 0.45 + bob;
+      this.parts.body.position.y = 0.525 + bob;
+      this.parts.head.position.y = 0.8 + bob;
     } else if (this.state === STATES.PLAYING) {
       // Arms forward (holding joystick/buttons)
       this.parts.leftArmPivot.rotation.x = -0.8;
@@ -206,8 +206,8 @@ export class NPC {
       this.parts.rightArmPivot.rotation.z = -0.15;
       // Head bobs with excitement
       const headBob = Math.sin(t * 5) * 0.04;
-      this.parts.head.position.y = 0.45 + headBob;
-      this.parts.body.position.y = 0.175 + Math.abs(Math.sin(t * 5)) * 0.01;
+      this.parts.head.position.y = 0.8 + headBob;
+      this.parts.body.position.y = 0.525 + Math.abs(Math.sin(t * 5)) * 0.01;
     } else if (this.state === STATES.WATCHING) {
       // Head turns left/right, slight lean
       this.parts.head.rotation.y = Math.sin(t * 1.5) * 0.3;
