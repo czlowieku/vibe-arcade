@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { log, addLogUpdate } from './logger.js';
 
 const client = new Anthropic();
 
@@ -102,6 +103,9 @@ Return ONLY the JSON object. Nothing else.`;
 export async function generatePinballConfig(genre, theme, modifier, cardLevels, extraInstructions, res) {
   const prompt = buildPinballPrompt(genre, theme, modifier, cardLevels, extraInstructions);
 
+  const logEntry = { type: 'pinball', genre, theme, modifier, status: 'generating', message: `Generating pinball: ${genre} + ${theme}`, startTime: Date.now() };
+  log(logEntry);
+
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -110,27 +114,37 @@ export async function generatePinballConfig(genre, theme, modifier, cardLevels, 
 
   let fullResponse = '';
 
-  const stream = await client.messages.stream({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  try {
+    const stream = await client.messages.stream({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    });
 
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      fullResponse += event.delta.text;
-      res.write(`data: ${JSON.stringify({ type: 'chunk', text: event.delta.text })}\n\n`);
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        fullResponse += event.delta.text;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: event.delta.text })}\n\n`);
+      }
     }
+  } catch (err) {
+    addLogUpdate(logEntry.id, { status: 'error', error: err.message, duration: Date.now() - logEntry.startTime });
+    throw err;
   }
 
   // Extract JSON from response
   const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No valid JSON in AI response');
+  if (!jsonMatch) {
+    addLogUpdate(logEntry.id, { status: 'error', error: 'No valid JSON in AI response', duration: Date.now() - logEntry.startTime });
+    throw new Error('No valid JSON in AI response');
+  }
 
   const config = JSON.parse(jsonMatch[0]);
 
   res.write(`data: ${JSON.stringify({ type: 'done', config, tableName: config.tableName || 'PINBALL' })}\n\n`);
   res.end();
+
+  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: config.tableName, codeLength: fullResponse.length });
 
   return config;
 }

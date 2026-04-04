@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeGameCode } from './sanitize.js';
+import { log, addLogUpdate } from './logger.js';
 
 const GENRE_DESCRIPTIONS = {
   platformer: 'A side-scrolling platformer where the player jumps between platforms, avoids hazards, and collects items. Player moves left/right and jumps.',
@@ -126,6 +127,9 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
 
   const client = new Anthropic({ apiKey });
 
+  const logEntry = { type: 'game', genre, theme, modifier, status: 'generating', message: `Generating game: ${genre} + ${theme}`, startTime: Date.now() };
+  log(logEntry);
+
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -134,17 +138,22 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
 
   let fullCode = '';
 
-  const stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
-    max_tokens: 8000,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  try {
+    const stream = await client.messages.stream({
+      model: 'claude-opus-4-20250514',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: prompt }],
+    });
 
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta?.text) {
-      fullCode += event.delta.text;
-      res.write(`data: ${JSON.stringify({ type: 'chunk', text: event.delta.text })}\n\n`);
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta?.text) {
+        fullCode += event.delta.text;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: event.delta.text })}\n\n`);
+      }
     }
+  } catch (err) {
+    addLogUpdate(logEntry.id, { status: 'error', error: err.message, duration: Date.now() - logEntry.startTime });
+    throw err;
   }
 
   // Strip markdown fences
@@ -162,5 +171,8 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   };
   res.write(`data: ${JSON.stringify(result)}\n\n`);
   res.end();
+
+  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length });
+
   return result;
 }
