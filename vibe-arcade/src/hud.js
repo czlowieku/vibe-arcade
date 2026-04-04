@@ -19,6 +19,7 @@ export class HUD {
     this.visitorsEl = document.getElementById('visitors-value');
 
     this.historyPanel = document.getElementById('history-panel');
+    this.reviewsPanel = document.getElementById('reviews-panel');
     this.onKickNpc = null;
 
     this.onPlayAgain = null;
@@ -26,6 +27,7 @@ export class HUD {
     this.onBack = null;
     this.onNewGame = null;
     this.onModifyGame = null;
+    this.onShowReviews = null;
 
     this._bindEvents();
     this.updateDisplay();
@@ -95,6 +97,13 @@ export class HUD {
 
     document.getElementById('btn-cancel-key').addEventListener('click', () => {
       document.getElementById('api-key-panel').classList.add('hidden');
+    });
+
+    document.getElementById('btn-reviews').addEventListener('click', () => {
+      if (this.onShowReviews) this.onShowReviews();
+    });
+    document.getElementById('btn-close-reviews').addEventListener('click', () => {
+      this.reviewsPanel.classList.add('hidden');
     });
 
     this._updateApiKeyButton();
@@ -325,5 +334,73 @@ export class HUD {
 
   hideKickButton() {
     document.getElementById('btn-kick-npc').classList.add('hidden');
+  }
+
+  showReviewsButton() {
+    document.getElementById('btn-reviews').classList.remove('hidden');
+  }
+
+  hideReviewsButton() {
+    document.getElementById('btn-reviews').classList.add('hidden');
+  }
+
+  showMachineReviews(machineIndex, machineTitle) {
+    document.getElementById('reviews-machine-title').textContent = machineTitle || 'Machine #' + machineIndex;
+
+    const list = document.getElementById('reviews-list');
+    list.replaceChildren();
+
+    const reviews = (this.gameState.npcHistory || [])
+      .filter(e => e.machineIndex === machineIndex)
+      .reverse();
+
+    if (reviews.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'review-empty';
+      empty.textContent = 'Brak recenzji \u2014 poczekaj az NPC zagra!';
+      list.appendChild(empty);
+    } else {
+      for (const r of reviews) {
+        const item = document.createElement('div');
+        item.className = 'review-item';
+
+        const header = document.createElement('div');
+        header.className = 'review-header';
+
+        const name = document.createElement('span');
+        name.className = 'review-name';
+        name.textContent = r.npcName || 'NPC';
+        header.appendChild(name);
+
+        const stars = document.createElement('span');
+        stars.className = 'review-stars';
+        stars.textContent = '\u2B50'.repeat(Math.min(r.rating || 0, 5));
+        header.appendChild(stars);
+
+        item.appendChild(header);
+
+        const details = document.createElement('div');
+        details.className = 'review-details';
+
+        const score = document.createElement('span');
+        score.className = 'review-score';
+        score.textContent = 'Wynik: ' + (r.score || 0).toLocaleString();
+        details.appendChild(score);
+
+        const skill = document.createElement('span');
+        skill.className = 'review-skill';
+        skill.textContent = 'Skill: ' + (r.skill || 5) + '/10';
+        details.appendChild(skill);
+
+        const time = document.createElement('span');
+        time.textContent = this._timeAgo(r.timestamp);
+        details.appendChild(time);
+
+        item.appendChild(details);
+        list.appendChild(item);
+      }
+    }
+
+    this.reviewsPanel.classList.remove('hidden');
   }
 }
