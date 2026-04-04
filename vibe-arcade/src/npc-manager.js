@@ -322,9 +322,12 @@ export class NpcManager {
     if (machine.gameCode) {
       const runner = new NpcGameRunner();
       npc.gameRunner = runner;
+      const saved = this.gameState.machines[machine.index];
+      const genre = saved?.genre || 'platformer';
+      const skillNorm = npc.getSkillNormalized(genre);
       runner.start(
         machine.gameCode,
-        npc.skill,
+        skillNorm,
         (points, totalScore) => {
           // Track score rate for commentary
           npc._scoreRate = totalScore - (npc._lastScore || 0);

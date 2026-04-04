@@ -104,12 +104,30 @@ export class NpcGameRunner {
     this.inputTimer -= dt;
     if (this.inputTimer > 0) return;
 
-    // Higher skill = shorter interval between inputs (150-400ms)
-    const minInterval = 0.15;
-    const maxInterval = 0.40;
-    const interval = maxInterval - (this.skill * (maxInterval - minInterval));
-    // Add some randomness
-    this.inputTimer = interval + (Math.random() * 0.1 - 0.05);
+    // Skill-tiered input: this.skill is 0.1-1.0 (mapped from 1-10)
+    let interval, accuracy;
+    if (this.skill >= 0.9) {
+      // God tier (skill 9-10): 60-120ms, 95% accuracy
+      interval = 0.06 + Math.random() * 0.06;
+      accuracy = 0.95;
+    } else if (this.skill >= 0.7) {
+      // Good (skill 7-8): 120-200ms, 80% accuracy
+      interval = 0.12 + Math.random() * 0.08;
+      accuracy = 0.80;
+    } else if (this.skill >= 0.5) {
+      // Decent (skill 5-6): 200-300ms, 65% accuracy
+      interval = 0.20 + Math.random() * 0.10;
+      accuracy = 0.65;
+    } else if (this.skill >= 0.3) {
+      // Mediocre (skill 3-4): 300-400ms, 50% accuracy
+      interval = 0.30 + Math.random() * 0.10;
+      accuracy = 0.50;
+    } else {
+      // Noob (skill 1-2): 400-500ms, 30% accuracy
+      interval = 0.40 + Math.random() * 0.10;
+      accuracy = 0.30;
+    }
+    this.inputTimer = interval;
 
     // Release previously pressed keys
     for (const key of this._pressedKeys) {
@@ -119,7 +137,7 @@ export class NpcGameRunner {
     this._pressedKeys.clear();
 
     // Higher skill = more likely to press meaningful keys, less random pauses
-    if (Math.random() < 0.15 + this.skill * 0.25) {
+    if (Math.random() < accuracy) {
       // Press 1-2 keys
       const numKeys = Math.random() < 0.3 ? 2 : 1;
       for (let i = 0; i < numKeys; i++) {
