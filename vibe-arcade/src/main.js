@@ -172,6 +172,35 @@ const cardUI = new CardUI(
 
 const hud = new HUD(gameState, save);
 
+function _buildMiniCard(cardId, stars) {
+  const card = getCardById(cardId);
+  if (!card) return null;
+  const el = document.createElement('div');
+  el.className = `card ${card.category}`;
+  el.style.width = '60px';
+  el.style.height = '80px';
+
+  const starsEl = document.createElement('div');
+  starsEl.className = 'card-stars';
+  starsEl.style.fontSize = '7px';
+  starsEl.textContent = '★'.repeat(stars);
+
+  const icon = document.createElement('div');
+  icon.className = 'card-icon';
+  icon.style.fontSize = '18px';
+  icon.textContent = card.icon;
+
+  const name = document.createElement('div');
+  name.className = 'card-name';
+  name.style.fontSize = '8px';
+  name.textContent = card.name;
+
+  el.appendChild(starsEl);
+  el.appendChild(icon);
+  el.appendChild(name);
+  return el;
+}
+
 function showMachineCards(machine) {
   const container = document.getElementById('machine-cards');
   container.replaceChildren();
@@ -181,40 +210,30 @@ function showMachineCards(machine) {
   const { genre, theme, modifier } = saved.recipe;
   const cardLevels = saved.recipe.cardLevels || {};
 
-  for (const [id, category, stars] of [
-    [genre, 'genre', cardLevels.genre || 1],
-    [theme, 'theme', cardLevels.theme || 1],
-    [modifier, 'modifier', cardLevels.modifier || 1],
+  // Original recipe cards
+  for (const [id, stars] of [
+    [genre, cardLevels.genre || 1],
+    [theme, cardLevels.theme || 1],
+    [modifier, cardLevels.modifier || 1],
   ]) {
     if (!id) continue;
-    const card = getCardById(id);
-    if (!card) continue;
-
-    const el = document.createElement('div');
-    el.className = `card ${card.category}`;
-    el.style.width = '60px';
-    el.style.height = '80px';
-
-    const starsEl = document.createElement('div');
-    starsEl.className = 'card-stars';
-    starsEl.style.fontSize = '7px';
-    starsEl.textContent = '★'.repeat(stars);
-
-    const icon = document.createElement('div');
-    icon.className = 'card-icon';
-    icon.style.fontSize = '18px';
-    icon.textContent = card.icon;
-
-    const name = document.createElement('div');
-    name.className = 'card-name';
-    name.style.fontSize = '8px';
-    name.textContent = card.name;
-
-    el.appendChild(starsEl);
-    el.appendChild(icon);
-    el.appendChild(name);
-    container.appendChild(el);
+    const el = _buildMiniCard(id, stars);
+    if (el) container.appendChild(el);
   }
+
+  // Added cards via drag & drop
+  if (saved.addedCards && saved.addedCards.length > 0) {
+    const plus = document.createElement('div');
+    plus.style.cssText = 'display:flex;align-items:center;font-size:18px;color:#888;margin:0 2px;';
+    plus.textContent = '+';
+    container.appendChild(plus);
+
+    for (const ac of saved.addedCards) {
+      const el = _buildMiniCard(ac.cardId, ac.stars);
+      if (el) container.appendChild(el);
+    }
+  }
+
   container.classList.remove('hidden');
 }
 
@@ -624,8 +643,15 @@ canvas.addEventListener('drop', (e) => {
     instruction = `Blend in elements of this genre: ${card.name} — ${card.desc}. Add genre-specific mechanics while keeping the core game working. Make the change VERY noticeable.`;
   }
 
-  // Use saved recipe for proper genre/theme context
+  // Save the added card to machine data
   const saved = gameState.machines[machine.index];
+  if (saved) {
+    if (!saved.addedCards) saved.addedCards = [];
+    saved.addedCards.push({ cardId: card.id, stars: cardData.stars });
+    save();
+  }
+
+  // Use saved recipe for proper genre/theme context
   const recipeGenre = saved?.recipe?.genre || 'custom';
   const recipeTheme = saved?.recipe?.theme || 'custom';
   const recipeModifier = saved?.recipe?.modifier || null;
