@@ -210,7 +210,20 @@ function showMachineCards(machine) {
   const container = document.getElementById('machine-cards');
   container.replaceChildren();
   const saved = gameState.machines[machine.index];
-  if (!saved?.recipe) { container.classList.add('hidden'); return; }
+  if (!saved) { container.classList.add('hidden'); return; }
+
+  // If no recipe saved (old game), try to infer from title
+  if (!saved.recipe && saved.title) {
+    const t = saved.title.toLowerCase();
+    const genres = CARDS.genre.map(c => c.id);
+    const themes = CARDS.theme.map(c => c.id);
+    const foundGenre = genres.find(g => t.includes(g.replace('-', ' ')) || t.includes(g));
+    const foundTheme = themes.find(th => t.includes(th));
+    if (foundGenre || foundTheme) {
+      saved.recipe = { genre: foundGenre || null, theme: foundTheme || null, modifier: null, cardLevels: {} };
+    }
+  }
+  if (!saved.recipe) { container.classList.add('hidden'); return; }
 
   const { genre, theme, modifier } = saved.recipe;
   const cardLevels = saved.recipe.cardLevels || {};
