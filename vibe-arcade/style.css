@@ -1091,14 +1091,32 @@ body {
 
 .suggestion-item {
   background: rgba(255,255,255,0.9);
-  border: 1px solid #ddd;
+  border: 2px solid #ddd;
   border-radius: 10px;
   padding: 12px 16px;
   margin-bottom: 10px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.suggestion-item:hover {
+  border-color: #e67e22;
+}
+
+.suggestion-item.selected {
+  border-color: #e67e22;
+  background: rgba(230,126,34,0.08);
+}
+
+.suggestion-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #e67e22;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .suggestion-text {
@@ -1107,20 +1125,30 @@ body {
   color: #333;
 }
 
-.suggestion-apply {
-  padding: 6px 16px;
+#btn-apply-suggestions {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 24px;
   background: linear-gradient(135deg, #e67e22, #d35400);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 15px;
   font-weight: bold;
   cursor: pointer;
-  white-space: nowrap;
+  transition: all 0.2s;
 }
 
-.suggestion-apply:hover {
-  box-shadow: 0 2px 10px rgba(230,126,34,0.4);
+#btn-apply-suggestions:disabled {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+#btn-apply-suggestions:not(:disabled):hover {
+  box-shadow: 0 4px 16px rgba(230,126,34,0.4);
+  transform: scale(1.02);
 }
 
 #btn-close-suggestions {

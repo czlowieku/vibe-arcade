@@ -368,27 +368,51 @@ document.getElementById('btn-suggestions').addEventListener('click', () => {
   const listEl = document.getElementById('suggestions-list');
   listEl.replaceChildren();
 
+  const selectedSuggestions = new Set();
+
   for (const suggestion of machine.suggestions) {
     const item = document.createElement('div');
     item.className = 'suggestion-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'suggestion-checkbox';
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedSuggestions.add(suggestion);
+        item.classList.add('selected');
+      } else {
+        selectedSuggestions.delete(suggestion);
+        item.classList.remove('selected');
+      }
+      applyBtn.disabled = selectedSuggestions.size === 0;
+      applyBtn.textContent = selectedSuggestions.size > 1
+        ? `IMPLEMENT ${selectedSuggestions.size} SELECTED`
+        : 'IMPLEMENT SELECTED';
+    });
 
     const text = document.createElement('div');
     text.className = 'suggestion-text';
     text.textContent = suggestion;
 
-    const btn = document.createElement('button');
-    btn.className = 'suggestion-apply';
-    btn.textContent = 'APPLY';
-    btn.addEventListener('click', () => {
-      document.getElementById('suggestions-panel').classList.add('hidden');
-      document.getElementById('modify-instructions').value = suggestion;
-      document.getElementById('btn-do-modify').click();
-    });
-
+    item.appendChild(checkbox);
     item.appendChild(text);
-    item.appendChild(btn);
     listEl.appendChild(item);
   }
+
+  // Apply selected button
+  const applyBtn = document.createElement('button');
+  applyBtn.id = 'btn-apply-suggestions';
+  applyBtn.textContent = 'IMPLEMENT SELECTED';
+  applyBtn.disabled = true;
+  applyBtn.addEventListener('click', () => {
+    if (selectedSuggestions.size === 0) return;
+    document.getElementById('suggestions-panel').classList.add('hidden');
+    const combined = [...selectedSuggestions].join('\n\nAND ALSO:\n\n');
+    document.getElementById('modify-instructions').value = combined;
+    document.getElementById('btn-do-modify').click();
+  });
+  listEl.appendChild(applyBtn);
 
   document.getElementById('suggestions-panel').classList.remove('hidden');
 });
