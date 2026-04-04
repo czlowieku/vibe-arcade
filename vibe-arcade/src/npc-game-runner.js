@@ -67,7 +67,23 @@ export class NpcGameRunner {
     const crashFnName = `__vibe_npc_onCrash_${this.runnerId}`;
     window[crashFnName] = () => { this.crashCount++; };
 
+    // Track all rAF IDs so we can cancel them on stop
+    const rafTracker = `__vibe_npc_rafs_${this.runnerId}`;
+    window[rafTracker] = [];
+    const origRAF = window.requestAnimationFrame.bind(window);
+
     const wrappedCode = `
+      // Intercept rAF to track IDs for cleanup
+      const __origRAF = window.requestAnimationFrame;
+      const __rafList = window['${rafTracker}'];
+      const __wrappedRAF = function(cb) {
+        const id = __origRAF.call(window, cb);
+        __rafList.push(id);
+        return id;
+      };
+      // Temporarily override for this game's scope
+      window.requestAnimationFrame = __wrappedRAF;
+
       try {
         ${gameCode}
         startGame(
@@ -80,6 +96,9 @@ export class NpcGameRunner {
         window['${crashFnName}']();
         window['${gameOverFnName}'](0);
       }
+
+      // Restore original rAF after game init
+      window.requestAnimationFrame = __origRAF;
     `;
 
     const blob = new Blob([wrappedCode], { type: 'application/javascript' });
@@ -197,6 +216,15 @@ export class NpcGameRunner {
     // Remove canvas from DOM
     if (this.canvas && this.canvas.parentNode) {
       this.canvas.parentNode.removeChild(this.canvas);
+    }
+
+    // Cancel all tracked requestAnimationFrame calls from this game
+    const rafTracker = `__vibe_npc_rafs_${this.runnerId}`;
+    if (window[rafTracker]) {
+      for (const id of window[rafTracker]) {
+        cancelAnimationFrame(id);
+      }
+      delete window[rafTracker];
     }
 
     // Clean up window globals
