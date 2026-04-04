@@ -58,6 +58,7 @@ export class NpcManager {
       this._updateNpc(npc, dt);
       npc.animate(dt);
     }
+    this._resolveCollisions();
     for (let i = this.npcs.length - 1; i >= 0; i--) {
       if (this.npcs[i].dead) {
         this._removeNpc(this.npcs[i]);
@@ -627,6 +628,64 @@ export class NpcManager {
         partner.targetMachine = null;
         partner.walkQueue = [WAYPOINTS.ENTRY.clone().add(new THREE.Vector3(0.4, 0, 0)), WAYPOINTS.DOOR.clone().add(new THREE.Vector3(0.4, 0, 0))];
       }
+    }
+  }
+
+  _resolveCollisions() {
+    const NPC_RADIUS = 0.35;
+    const MACHINE_RADIUS = 0.7;
+    const PUSH_STRENGTH = 2.0;
+
+    // NPC vs NPC
+    for (let i = 0; i < this.npcs.length; i++) {
+      const a = this.npcs[i];
+      if (a.dead) continue;
+      for (let j = i + 1; j < this.npcs.length; j++) {
+        const b = this.npcs[j];
+        if (b.dead) continue;
+        const dx = a.group.position.x - b.group.position.x;
+        const dz = a.group.position.z - b.group.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const minDist = NPC_RADIUS * 2;
+        if (dist < minDist && dist > 0.01) {
+          const overlap = (minDist - dist) * 0.5;
+          const nx = dx / dist;
+          const nz = dz / dist;
+          // Only push NPCs that are walking (not playing/waiting)
+          const aWalking = a.walkQueue.length > 0;
+          const bWalking = b.walkQueue.length > 0;
+          if (aWalking) { a.group.position.x += nx * overlap; a.group.position.z += nz * overlap; }
+          if (bWalking) { b.group.position.x -= nx * overlap; b.group.position.z -= nz * overlap; }
+          if (!aWalking && !bWalking) {
+            a.group.position.x += nx * overlap * 0.5;
+            a.group.position.z += nz * overlap * 0.5;
+            b.group.position.x -= nx * overlap * 0.5;
+            b.group.position.z -= nz * overlap * 0.5;
+          }
+        }
+      }
+
+      // NPC vs Machines
+      for (const machine of this.machines) {
+        const mx = machine.group.position.x;
+        const mz = machine.group.position.z;
+        const dx = a.group.position.x - mx;
+        const dz = a.group.position.z - mz;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const minDist = NPC_RADIUS + MACHINE_RADIUS;
+        if (dist < minDist && dist > 0.01) {
+          // Push NPC away from machine (machines don't move)
+          const overlap = minDist - dist;
+          const nx = dx / dist;
+          const nz = dz / dist;
+          a.group.position.x += nx * overlap;
+          a.group.position.z += nz * overlap;
+        }
+      }
+
+      // NPC vs walls (keep inside arcade bounds)
+      a.group.position.x = Math.max(-7.5, Math.min(7.5, a.group.position.x));
+      a.group.position.z = Math.max(-7.5, Math.min(13, a.group.position.z));
     }
   }
 
