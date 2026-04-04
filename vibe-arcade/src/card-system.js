@@ -6,6 +6,7 @@ export const CARDS = {
     { id: 'puzzle', name: 'Puzzle', icon: '🧩', category: 'genre', desc: 'Solve logic challenges' },
     { id: 'runner', name: 'Runner', icon: '💨', category: 'genre', desc: 'Endless running action' },
     { id: 'dodge', name: 'Dodge', icon: '⚡', category: 'genre', desc: 'Avoid all obstacles' },
+    { id: 'pinball', name: 'Pinball', icon: '🎯', category: 'genre', desc: 'Flippers, bumpers, and ball physics' },
   ],
   theme: [
     { id: 'neon', name: 'Neon', icon: '🌈', category: 'theme', desc: 'Glowing neon cyberpunk' },

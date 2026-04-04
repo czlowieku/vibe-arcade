@@ -29,6 +29,7 @@ export class NPC {
     this.state = STATES.SPAWNING;
     this.personality = personality; // { patience, generosity, standards }
     this.partnerId = partnerId;
+    this.skill = 0.2 + Math.random() * 0.8; // 0.2 to 1.0
     this.targetMachine = null;
     this.walkQueue = [];
     this.stateTimer = 0;
@@ -36,6 +37,7 @@ export class NPC {
     this.browseCount = 0;
     this.rating = null;
     this.dead = false;
+    this.gameRunner = null; // NpcGameRunner instance while playing
 
     this.emoticonSprite = null;
     this.emoticonTimer = 0;
@@ -273,23 +275,40 @@ export class NPC {
       this.emoticonSprite = null;
     }
 
-    // Draw text onto a 64x64 canvas
+    // Determine if this is a short emoji or longer text
+    const isLongText = text.length > 3;
+
+    const canvasW = isLongText ? 256 : 64;
+    const canvasH = isLongText ? 64 : 64;
+
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = canvasW;
+    canvas.height = canvasH;
     const ctx = canvas.getContext('2d');
 
     // Background bubble
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     ctx.beginPath();
-    ctx.roundRect(4, 4, 56, 48, 8);
+    if (isLongText) {
+      ctx.roundRect(4, 4, canvasW - 8, canvasH - 16, 10);
+    } else {
+      ctx.roundRect(4, 4, 56, 48, 8);
+    }
     ctx.fill();
 
-    // Text (emoji / emoticon)
-    ctx.font = '28px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, 32, 28);
+    // Text
+    if (isLongText) {
+      ctx.font = 'bold 18px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#222';
+      ctx.fillText(text, canvasW / 2, canvasH / 2 - 4);
+    } else {
+      ctx.font = '28px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 32, 28);
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({
@@ -301,7 +320,11 @@ export class NPC {
 
     const sprite = new THREE.Sprite(material);
     sprite.position.set(0, 1.15, 0);
-    sprite.scale.set(0.3, 0.3, 0.3);
+    if (isLongText) {
+      sprite.scale.set(0.6, 0.2, 1);
+    } else {
+      sprite.scale.set(0.3, 0.3, 0.3);
+    }
 
     this.group.add(sprite);
     this.emoticonSprite = sprite;

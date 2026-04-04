@@ -19,6 +19,7 @@ const GENRE_DESC = {
   puzzle: 'puzzle game — matching, sorting, or pattern logic',
   runner: 'endless runner — auto-move forward, dodge obstacles',
   dodge: 'dodge game — avoid falling/flying obstacles, survive',
+  pinball: 'pinball machine — flippers, bumpers, ramps, ball physics, score multipliers',
 };
 const THEME_DESC = {
   neon: 'neon cyberpunk — glowing outlines, dark bg, cyan/magenta/yellow',
@@ -383,6 +384,11 @@ canvas.addEventListener('click', (event) => {
         cardUI.hideCardBar();
         hud.showBackButton();
       } else if (machine.state === 'generating') {
+        activeMachine = machine;
+        cameraCtrl.zoomTo(machine);
+        cardUI.hideCardBar();
+        hud.showBackButton();
+      } else if (machine.state === 'occupied_npc') {
         activeMachine = machine;
         cameraCtrl.zoomTo(machine);
         cardUI.hideCardBar();

@@ -1,5 +1,29 @@
 import * as THREE from 'three';
 import { NPC, STATES } from './npc.js';
+import { NpcGameRunner } from './npc-game-runner.js';
+
+const COMMENTARY_GOOD = [
+  'NAKURWIAM!!!',
+  'SUPER GIERKA!',
+  'EZ GG',
+  'JESTEM BOGIEM',
+  'O KURDE JAK JADE!',
+];
+
+const COMMENTARY_BAD = [
+  'ee nudne...',
+  'znowu to samo',
+  'nie kumam',
+  'meh...',
+  'kiedy koniec?',
+];
+
+const COMMENTARY_NEUTRAL = [
+  'hmm...',
+  'no no no',
+  'ciekawe',
+  'ok ok',
+];
 
 const WAYPOINTS = {
   DOOR: new THREE.Vector3(0, 0, 8),
@@ -176,6 +200,27 @@ export class NpcManager {
 
       case STATES.PLAYING:
         npc.stateTimer -= dt;
+
+        // Update NPC game runner (simulated input + frame capture)
+        if (npc.gameRunner && npc.gameRunner.running) {
+          npc.gameRunner.update(dt, npc.targetMachine);
+        }
+
+        // Check if game ended on its own (onGameOver fired)
+        if (npc.gameRunner && npc.gameRunner.gameOver) {
+          this._finishPlaying(npc);
+          break;
+        }
+
+        // Commentary thought bubbles every 4-8 seconds
+        if (!npc._commentaryTimer) npc._commentaryTimer = 4 + Math.random() * 4;
+        npc._commentaryTimer -= dt;
+        if (npc._commentaryTimer <= 0) {
+          npc._commentaryTimer = 4 + Math.random() * 4;
+          this._showCommentary(npc);
+        }
+
+        // Time's up — force finish
         if (npc.stateTimer <= 0) {
           this._finishPlaying(npc);
         }
@@ -261,14 +306,38 @@ export class NpcManager {
     npc.state = STATES.PLAYING;
     npc.stateTimer = npc.playDuration;
     npc.targetMachine = machine;
+    npc._commentaryTimer = 4 + Math.random() * 4;
+    npc._lastScore = 0;
+    npc._scoreRate = 0;
     machine.npcOccupant = npc;
     machine.state = 'occupied_npc';
-    this._drawNpcPlayingScreen(machine);
 
     const dir = new THREE.Vector3().subVectors(machine.group.position, npc.group.position);
     dir.y = 0;
     if (dir.length() > 0.01) {
       npc.group.rotation.y = Math.atan2(dir.x, dir.z);
+    }
+
+    // If machine has game code, actually run the game
+    if (machine.gameCode) {
+      const runner = new NpcGameRunner();
+      npc.gameRunner = runner;
+      runner.start(
+        machine.gameCode,
+        npc.skill,
+        (points, totalScore) => {
+          // Track score rate for commentary
+          npc._scoreRate = totalScore - (npc._lastScore || 0);
+          npc._lastScore = totalScore;
+        },
+        (finalScore) => {
+          // Game ended on its own — will be picked up in update loop
+        }
+      );
+    } else {
+      // No game code — fallback to old static screen
+      npc.gameRunner = null;
+      this._drawNpcPlayingScreen(machine);
     }
   }
 
@@ -276,13 +345,30 @@ export class NpcManager {
     const machine = npc.targetMachine;
     if (!machine) { this._startLeaving(npc); return; }
 
+    // Stop the game runner and clean up
+    let gameScore = 0;
+    let hadRunner = false;
+    if (npc.gameRunner) {
+      hadRunner = true;
+      gameScore = npc.gameRunner.score;
+      npc.gameRunner.stop();
+      npc.gameRunner = null;
+    }
+
     machine.npcOccupant = null;
     machine.state = 'ready';
     machine.drawReady();
 
-    const saved = this.gameState.machines[machine.index];
-    const avgStars = saved ? ((saved.cardStars?.genre || 1) + (saved.cardStars?.theme || 1)) / 2 : 1;
-    const rating = this.reputation.calculateRating(npc.personality.standards, avgStars);
+    let rating;
+    if (hadRunner) {
+      // Score-based rating
+      rating = this._scoreToRating(gameScore, npc.personality.standards);
+    } else {
+      // Fallback: old random rating
+      const saved = this.gameState.machines[machine.index];
+      const avgStars = saved ? ((saved.cardStars?.genre || 1) + (saved.cardStars?.theme || 1)) / 2 : 1;
+      rating = this.reputation.calculateRating(npc.personality.standards, avgStars);
+    }
     npc.rating = rating;
 
     this.reputation.addRating(machine.index, rating);
@@ -300,6 +386,44 @@ export class NpcManager {
 
     npc.state = STATES.RATING;
     npc.stateTimer = 2.5;
+  }
+
+  _scoreToRating(score, standards) {
+    // Map game score to base star rating
+    let baseRating;
+    if (score >= 500) {
+      baseRating = 4 + Math.random();        // 4-5
+    } else if (score >= 200) {
+      baseRating = 3 + Math.random();        // 3-4
+    } else if (score >= 50) {
+      baseRating = 2 + Math.random();        // 2-3
+    } else {
+      baseRating = 1 + Math.random();        // 1-2
+    }
+
+    // Modulate by NPC standards (high standards = slightly harsher)
+    const standardsModifier = (standards - 0.5) * 0.8;
+    const finalRating = baseRating - standardsModifier;
+    return Math.max(1, Math.min(5, Math.round(finalRating)));
+  }
+
+  _showCommentary(npc) {
+    const score = npc.gameRunner ? npc.gameRunner.score : 0;
+    const scoreRate = npc._scoreRate || 0;
+
+    let pool;
+    if (score > 100 || scoreRate > 20) {
+      pool = COMMENTARY_GOOD;
+    } else if (score < 20 && npc.stateTimer < npc.playDuration * 0.5) {
+      pool = COMMENTARY_BAD;
+    } else {
+      pool = COMMENTARY_NEUTRAL;
+    }
+
+    const line = pool[Math.floor(Math.random() * pool.length)];
+    npc.showEmoticon(line);
+    // Reset score rate tracking after commentary
+    npc._scoreRate = 0;
   }
 
   _startLeaving(npc) {
@@ -339,6 +463,11 @@ export class NpcManager {
 
   _removeNpc(npc) {
     this.scene.remove(npc.group);
+    // Clean up game runner if still active
+    if (npc.gameRunner) {
+      npc.gameRunner.stop();
+      npc.gameRunner = null;
+    }
     if (npc.targetMachine && npc.targetMachine.npcOccupant === npc) {
       npc.targetMachine.npcOccupant = null;
       if (npc.targetMachine.state === 'occupied_npc') {
