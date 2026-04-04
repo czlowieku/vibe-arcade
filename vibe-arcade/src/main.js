@@ -572,6 +572,12 @@ canvas.addEventListener('click', (event) => {
           document.getElementById('btn-suggestions').classList.remove('hidden');
           document.getElementById('btn-suggestions').textContent = `💡 SUGGESTIONS (${machine.suggestions.length})`;
         }
+      } else if (machine.state === 'broken') {
+        activeMachine = machine;
+        cameraCtrl.zoomTo(machine);
+        cardUI.hideCardBar();
+        hud.showBackButton();
+        showMachineCards(machine);
       } else if (machine.state === 'generating') {
         activeMachine = machine;
         cameraCtrl.zoomTo(machine);
