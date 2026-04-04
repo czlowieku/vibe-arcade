@@ -1,5 +1,6 @@
-// NPC Game Runner — executes game code on a hidden canvas for NPC play
-// Similar to GameSandbox but lightweight, with simulated AI input
+// NPC Game Runner — runs game code in an IFRAME for full isolation
+// Each NPC gets its own iframe with its own window/document/canvas
+// No keyboard event leaking between NPC games or to the player
 
 const INPUT_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
 const INPUT_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'];
@@ -9,19 +10,13 @@ let npcRunnerIdCounter = 0;
 export class NpcGameRunner {
   constructor() {
     this.runnerId = ++npcRunnerIdCounter;
-    this.canvas = null;
-    this.ctx = null;
+    this.iframe = null;
     this.running = false;
     this.score = 0;
     this.gameOver = false;
     this.inputTimer = 0;
     this.skill = 0.5;
-    this._script = null;
-    this._canvasId = null;
-    this._scoreCallback = null;
-    this._gameOverCallback = null;
     this._pressedKeys = new Set();
-    this.crashCount = 0;
   }
 
   start(gameCode, skill, onScore, onGameOver) {
@@ -29,134 +24,65 @@ export class NpcGameRunner {
     this.skill = skill;
     this.score = 0;
     this.gameOver = false;
-    this.crashCount = 0;
     this.inputTimer = 0;
-    this._scoreCallback = onScore;
-    this._gameOverCallback = onGameOver;
+    this._onScore = onScore;
+    this._onGameOver = onGameOver;
 
-    // Create hidden canvas
-    this._canvasId = `__vibe_npc_canvas_${this.runnerId}`;
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = 800;
-    this.canvas.height = 600;
-    this.canvas.id = this._canvasId;
-    this.canvas.style.cssText = 'position:absolute;top:-9999px;left:-9999px;';
-    document.body.appendChild(this.canvas);
-    this.ctx = this.canvas.getContext('2d');
+    // Create hidden iframe — fully isolated window/document
+    this.iframe = document.createElement('iframe');
+    this.iframe.id = `__vibe_npc_iframe_${this.runnerId}`;
+    this.iframe.style.cssText = 'position:absolute;top:-9999px;left:-9999px;width:800px;height:600px;border:none;';
+    document.body.appendChild(this.iframe);
 
-    // Clear canvas
-    this.ctx.fillStyle = '#0a0a1a';
-    this.ctx.fillRect(0, 0, 800, 600);
+    const iframeDoc = this.iframe.contentDocument;
+    const iframeWin = this.iframe.contentWindow;
 
-    // Set up window callbacks with unique names to avoid collision with player sandbox
-    const scoreFnName = `__vibe_npc_onScore_${this.runnerId}`;
-    const gameOverFnName = `__vibe_npc_onGameOver_${this.runnerId}`;
+    // Write canvas + game code into iframe
+    iframeDoc.open();
+    iframeDoc.write(`<!DOCTYPE html>
+<html><body style="margin:0;overflow:hidden;">
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+  var __npcScore = 0;
+  function __onScore(pts) {
+    __npcScore += pts;
+    window.parent.postMessage({ type: 'npc-score', id: ${this.runnerId}, points: pts, total: __npcScore }, '*');
+  }
+  function __onGameOver(finalScore) {
+    window.parent.postMessage({ type: 'npc-gameover', id: ${this.runnerId}, score: finalScore || __npcScore }, '*');
+  }
+  try {
+    ${gameCode}
+    startGame(document.getElementById('gameCanvas'), __onScore, __onGameOver);
+  } catch(err) {
+    console.error('NPC game error:', err);
+    __onGameOver(0);
+  }
+</` + `script>
+</body></html>`);
+    iframeDoc.close();
 
-    window[scoreFnName] = (points) => {
-      if (!this.running) return;
-      this.score += points;
-      if (this._scoreCallback) this._scoreCallback(points, this.score);
-    };
-
-    window[gameOverFnName] = (finalScore) => {
-      this.running = false;
-      this.gameOver = true;
-      if (this._gameOverCallback) this._gameOverCallback(finalScore || this.score);
-    };
-
-    const crashFnName = `__vibe_npc_onCrash_${this.runnerId}`;
-    window[crashFnName] = () => { this.crashCount++; };
-
-    // Track all rAF IDs so we can cancel them on stop
-    const rafTracker = `__vibe_npc_rafs_${this.runnerId}`;
-    window[rafTracker] = [];
-    const origRAF = window.requestAnimationFrame.bind(window);
-
-    const wrappedCode = `
-      // Intercept rAF to track IDs for cleanup
-      const __origRAF = window.requestAnimationFrame;
-      const __rafList = window['${rafTracker}'];
-      const __wrappedRAF = function(cb) {
-        const id = __origRAF.call(window, cb);
-        __rafList.push(id);
-        return id;
-      };
-      // Temporarily override for this game's scope
-      window.requestAnimationFrame = __wrappedRAF;
-
-      try {
-        ${gameCode}
-        startGame(
-          document.getElementById('${this._canvasId}'),
-          window['${scoreFnName}'],
-          window['${gameOverFnName}']
-        );
-      } catch(err) {
-        console.error('NPC game error:', err);
-        window['${crashFnName}']();
-        window['${gameOverFnName}'](0);
+    // Listen for messages from iframe
+    this._messageHandler = (e) => {
+      if (!e.data || e.data.id !== this.runnerId) return;
+      if (e.data.type === 'npc-score') {
+        this.score = e.data.total;
+        if (this._onScore) this._onScore(e.data.points, e.data.total);
+      } else if (e.data.type === 'npc-gameover') {
+        this.score = e.data.score || this.score;
+        this.gameOver = true;
+        this.running = false;
+        if (this._onGameOver) this._onGameOver(this.score);
       }
-
-      // Restore original rAF after game init
-      window.requestAnimationFrame = __origRAF;
-    `;
-
-    const blob = new Blob([wrappedCode], { type: 'application/javascript' });
-    const url = URL.createObjectURL(blob);
-    this._script = document.createElement('script');
-    this._script.src = url;
-    document.body.appendChild(this._script);
-    URL.revokeObjectURL(url);
+    };
+    window.addEventListener('message', this._messageHandler);
 
     this.running = true;
-    this._crashed = false;
-
-    // Detect crash — if canvas stays blank after 2s, game failed to start
-    this._crashCheckTimer = setTimeout(() => {
-      if (!this.running || this.gameOver) return;
-      try {
-        const pixels = this.ctx.getImageData(100, 100, 10, 10).data;
-        let allBlack = true;
-        for (let i = 0; i < pixels.length; i += 4) {
-          if (pixels[i] > 5 || pixels[i+1] > 5 || pixels[i+2] > 5) { allBlack = false; break; }
-        }
-        if (allBlack) {
-          this._crashed = true;
-          this._drawFallback();
-        }
-      } catch(e) {}
-    }, 2000);
   }
 
-  _drawFallback() {
-    // Draw a "NOW PLAYING" screen on the hidden canvas so captureFrame has something to show
-    if (!this.ctx) return;
-    this.ctx.fillStyle = '#111';
-    this.ctx.fillRect(0, 0, 800, 600);
-    this.ctx.fillStyle = 'rgba(255,255,255,0.02)';
-    for (let y = 0; y < 600; y += 3) this.ctx.fillRect(0, y, 800, 1);
-    this.ctx.fillStyle = '#4fc3f7';
-    this.ctx.font = 'bold 32px Arial, sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('NOW PLAYING', 400, 260);
-    this.ctx.fillStyle = '#888';
-    this.ctx.font = '20px Arial, sans-serif';
-    this.ctx.fillText('Score: ' + this.score, 400, 320);
-    this.ctx.font = '48px Arial';
-    this.ctx.fillText('\uD83C\uDFAE', 400, 400);
-  }
-
-  /**
-   * Called every frame from npc-manager update loop.
-   * Sends simulated inputs and captures frame to machine screen.
-   */
   update(dt, machine) {
-    if (!this.running || this.gameOver) return;
-
-    // Simulate NPC key inputs
+    if (!this.running || this.gameOver || !this.iframe) return;
     this._simulateInput(dt);
-
-    // Capture frame to machine screen
     this._captureFrame(machine);
   }
 
@@ -164,125 +90,85 @@ export class NpcGameRunner {
     this.inputTimer -= dt;
     if (this.inputTimer > 0) return;
 
-    // Don't dispatch keys while a human player is playing
-    if (window.__vibe_player_playing) {
-      this.inputTimer = 0.5;
-      return;
-    }
-
-    // Skill-tiered input: this.skill is 0.1-1.0 (mapped from 1-10)
+    // Skill-tiered intervals
     let interval, accuracy;
-    if (this.skill >= 0.9) {
-      // God tier (skill 9-10): 60-120ms, 95% accuracy
-      interval = 0.06 + Math.random() * 0.06;
-      accuracy = 0.95;
-    } else if (this.skill >= 0.7) {
-      // Good (skill 7-8): 120-200ms, 80% accuracy
-      interval = 0.12 + Math.random() * 0.08;
-      accuracy = 0.80;
-    } else if (this.skill >= 0.5) {
-      // Decent (skill 5-6): 200-300ms, 65% accuracy
-      interval = 0.20 + Math.random() * 0.10;
-      accuracy = 0.65;
-    } else if (this.skill >= 0.3) {
-      // Mediocre (skill 3-4): 300-400ms, 50% accuracy
-      interval = 0.30 + Math.random() * 0.10;
-      accuracy = 0.50;
-    } else {
-      // Noob (skill 1-2): 400-500ms, 30% accuracy
-      interval = 0.40 + Math.random() * 0.10;
-      accuracy = 0.30;
-    }
+    if (this.skill >= 0.9) { interval = 0.06 + Math.random() * 0.06; accuracy = 0.95; }
+    else if (this.skill >= 0.7) { interval = 0.12 + Math.random() * 0.08; accuracy = 0.80; }
+    else if (this.skill >= 0.5) { interval = 0.20 + Math.random() * 0.10; accuracy = 0.65; }
+    else if (this.skill >= 0.3) { interval = 0.30 + Math.random() * 0.10; accuracy = 0.50; }
+    else { interval = 0.40 + Math.random() * 0.10; accuracy = 0.30; }
     this.inputTimer = interval;
 
-    // Release previously pressed keys
+    const iframeWin = this.iframe?.contentWindow;
+    if (!iframeWin) return;
+
+    // Release previous keys inside iframe
     for (const key of this._pressedKeys) {
       const idx = INPUT_KEYS.indexOf(key);
-      this._dispatchKey('keyup', key, INPUT_CODES[idx]);
+      this._dispatchKeyInIframe(iframeWin, 'keyup', key, INPUT_CODES[idx]);
     }
     this._pressedKeys.clear();
 
-    // Higher skill = more likely to press meaningful keys, less random pauses
+    // Press keys based on accuracy
     if (Math.random() < accuracy) {
-      // Press 1-2 keys
       const numKeys = Math.random() < 0.3 ? 2 : 1;
       for (let i = 0; i < numKeys; i++) {
         const idx = Math.floor(Math.random() * INPUT_KEYS.length);
-        const key = INPUT_KEYS[idx];
-        const code = INPUT_CODES[idx];
-        this._dispatchKey('keydown', key, code);
-        this._pressedKeys.add(key);
+        this._dispatchKeyInIframe(iframeWin, 'keydown', INPUT_KEYS[idx], INPUT_CODES[idx]);
+        this._pressedKeys.add(INPUT_KEYS[idx]);
       }
     }
   }
 
-  _dispatchKey(type, key, code) {
-    // Dispatch on window (games listen on window/document)
-    const event = new KeyboardEvent(type, {
-      key: key,
-      code: code,
-      bubbles: true,
-      cancelable: true,
-    });
-    window.dispatchEvent(event);
+  _dispatchKeyInIframe(win, type, key, code) {
+    try {
+      const event = new win.KeyboardEvent(type, {
+        key, code, bubbles: true, cancelable: true,
+      });
+      win.document.dispatchEvent(event);
+      win.dispatchEvent(event);
+    } catch (e) {
+      // Iframe may be dead
+    }
   }
 
   _captureFrame(machine) {
-    if (!this.canvas || !machine) return;
-    if (!machine.screenCtx || !machine.screenTexture) return;
-    // If game crashed, keep showing fallback with updated score
-    if (this._crashed) {
-      this._drawFallback();
-    }
+    if (!this.iframe || !machine?.screenCtx || !machine?.screenTexture) return;
     try {
-      machine.screenCtx.drawImage(this.canvas, 0, 0, 800, 600);
-      machine.screenTexture.needsUpdate = true;
+      const iframeCanvas = this.iframe.contentDocument?.getElementById('gameCanvas');
+      if (iframeCanvas) {
+        machine.screenCtx.drawImage(iframeCanvas, 0, 0, 800, 600);
+        machine.screenTexture.needsUpdate = true;
+      }
     } catch (e) {
-      // Ignore capture errors
+      // Cross-origin or dead iframe
     }
   }
 
   stop() {
     this.running = false;
     this.gameOver = true;
-    if (this._crashCheckTimer) { clearTimeout(this._crashCheckTimer); this._crashCheckTimer = null; }
 
-    // Release any held keys
-    for (const key of this._pressedKeys) {
-      const idx = INPUT_KEYS.indexOf(key);
-      this._dispatchKey('keyup', key, INPUT_CODES[idx]);
+    // Release keys
+    if (this.iframe?.contentWindow) {
+      for (const key of this._pressedKeys) {
+        const idx = INPUT_KEYS.indexOf(key);
+        this._dispatchKeyInIframe(this.iframe.contentWindow, 'keyup', key, INPUT_CODES[idx]);
+      }
     }
     this._pressedKeys.clear();
 
-    // Remove script from DOM
-    if (this._script && this._script.parentNode) {
-      this._script.parentNode.removeChild(this._script);
-      this._script = null;
+    // Remove message listener
+    if (this._messageHandler) {
+      window.removeEventListener('message', this._messageHandler);
+      this._messageHandler = null;
     }
 
-    // Remove canvas from DOM
-    if (this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
+    // Remove iframe
+    if (this.iframe?.parentNode) {
+      this.iframe.parentNode.removeChild(this.iframe);
     }
-
-    // Cancel all tracked requestAnimationFrame calls from this game
-    const rafTracker = `__vibe_npc_rafs_${this.runnerId}`;
-    if (window[rafTracker]) {
-      for (const id of window[rafTracker]) {
-        cancelAnimationFrame(id);
-      }
-      delete window[rafTracker];
-    }
-
-    // Clean up window globals
-    if (this.runnerId) {
-      delete window[`__vibe_npc_onScore_${this.runnerId}`];
-      delete window[`__vibe_npc_onGameOver_${this.runnerId}`];
-      delete window[`__vibe_npc_onCrash_${this.runnerId}`];
-    }
-
-    this.canvas = null;
-    this.ctx = null;
+    this.iframe = null;
   }
 
   destroy() {

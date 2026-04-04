@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { NPC, STATES } from './npc.js';
-// NpcGameRunner removed — NPC plays are visually simulated instead
+import { NpcGameRunner } from './npc-game-runner.js';
 import { getApiKey } from './storage.js';
 
 const COMMENTARY_GOOD = [
@@ -202,21 +202,27 @@ export class NpcManager {
       case STATES.PLAYING:
         npc.stateTimer -= dt;
 
-        // Simulate score growth based on skill
-        npc._simScoreTimer = (npc._simScoreTimer || 0) + dt;
-        if (npc._simScoreTimer > 0.5) {
-          npc._simScoreTimer = 0;
-          const skill = npc._simSkill || 5;
-          // Higher skill = more points per tick, with randomness
-          const baseGain = skill * 8;
-          const gain = Math.floor(baseGain + (Math.random() - 0.3) * baseGain);
-          npc._simScore = (npc._simScore || 0) + Math.max(0, gain);
-          npc._scoreRate = gain;
+        // Update game runner if active
+        if (npc.gameRunner && npc.gameRunner.running) {
+          npc.gameRunner.update(dt, npc.targetMachine);
+        } else if (npc.targetMachine) {
+          // Fallback animated screen if runner crashed or missing
+          npc._simScoreTimer = (npc._simScoreTimer || 0) + dt;
+          if (npc._simScoreTimer > 0.5) {
+            npc._simScoreTimer = 0;
+            const skill = npc._simSkill || 5;
+            const baseGain = skill * 8;
+            const gain = Math.floor(baseGain + (Math.random() - 0.3) * baseGain);
+            npc._simScore = (npc._simScore || 0) + Math.max(0, gain);
+            npc._scoreRate = gain;
+          }
+          this._drawNpcPlayingAnimated(npc, npc.targetMachine);
         }
 
-        // Draw animated playing screen
-        if (npc.targetMachine) {
-          this._drawNpcPlayingAnimated(npc, npc.targetMachine);
+        // Check if game ended on its own
+        if (npc.gameRunner && npc.gameRunner.gameOver) {
+          this._finishPlaying(npc);
+          break;
         }
 
         // Commentary thought bubbles every 4-8 seconds
@@ -325,22 +331,46 @@ export class NpcManager {
       npc.group.rotation.y = Math.atan2(dir.x, dir.z);
     }
 
-    // Simulate playing — score grows based on skill, animated screen
-    npc.gameRunner = null;
+    // Run the actual game via iframe-isolated runner
     const saved = this.gameState.machines[machine.index];
     const genre = saved?.genre || 'platformer';
     const skillLevel = npc.getSkillForGenre(genre);
     npc._simScore = 0;
     npc._simSkill = skillLevel;
     npc._simScoreTimer = 0;
+
+    if (machine.gameCode) {
+      const runner = new NpcGameRunner();
+      npc.gameRunner = runner;
+      const skillNorm = npc.getSkillNormalized(genre);
+      runner.start(
+        machine.gameCode,
+        skillNorm,
+        (points, totalScore) => {
+          npc._simScore = totalScore;
+          npc._scoreRate = totalScore - (npc._lastScore || 0);
+          npc._lastScore = totalScore;
+        },
+        (finalScore) => {
+          npc._simScore = finalScore;
+        }
+      );
+    } else {
+      npc.gameRunner = null;
+    }
   }
 
   _finishPlaying(npc) {
     const machine = npc.targetMachine;
     if (!machine) { this._startLeaving(npc); return; }
 
-    // Use simulated score
-    const gameScore = npc._simScore || 0;
+    // Use runner score if available, else simulated
+    let gameScore = npc._simScore || 0;
+    if (npc.gameRunner) {
+      gameScore = npc.gameRunner.score || gameScore;
+      npc.gameRunner.stop();
+      npc.gameRunner = null;
+    }
 
     machine.npcOccupant = null;
     machine.state = 'ready';
