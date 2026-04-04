@@ -82,15 +82,18 @@ function showPromptPanel(recipe) {
 }
 
 document.getElementById('btn-start-coding').addEventListener('click', () => {
+  console.log('[pinball-debug] START CODING clicked', { activeMachine: !!activeMachine, pendingRecipe: !!pendingRecipe });
   if (!activeMachine || !pendingRecipe) return;
   const extra = document.getElementById('prompt-extra').value.trim();
   document.getElementById('prompt-panel').classList.add('hidden');
 
   const genreCard = getCardById(pendingRecipe.genre.cardId);
   const isPinball = genreCard && genreCard.id.startsWith('pinball-');
+  console.log('[pinball-debug] genre:', genreCard?.id, 'isPinball:', isPinball, 'hasBuildFromConfig:', !!activeMachine?.buildFromConfig, 'apiKey:', !!getApiKey());
 
   if (isPinball && activeMachine && activeMachine.buildFromConfig) {
     // Pinball generation flow
+    console.log('[pinball-debug] Starting pinball generation...');
     activeMachine.state = 'generating';
 
     const themeCard = getCardById(pendingRecipe.theme.cardId);
@@ -111,6 +114,7 @@ document.getElementById('btn-start-coding').addEventListener('click', () => {
         apiKey: getApiKey(),
       }),
     }).then(async response => {
+      console.log('[pinball-debug] fetch response status:', response.status);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -123,8 +127,12 @@ document.getElementById('btn-start-coding').addEventListener('click', () => {
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
           const data = JSON.parse(line.slice(6));
+          console.log('[pinball-debug] SSE data:', data.type, data.type === 'done' ? data.config?.tableName : '');
           if (data.type === 'done') {
             activeMachine.buildFromConfig(data.config);
+          } else if (data.type === 'error') {
+            console.error('[pinball-debug] Server error:', data.message);
+            activeMachine.state = 'empty';
           }
         }
       }
@@ -465,10 +473,15 @@ canvas.addEventListener('click', (event) => {
     // Check for pinball table click
     const pinball = intersects[0].object.userData.pinball;
     if (pinball && cameraCtrl.isIso()) {
+      // Must be highlighted first (same as arcade machines)
+      if (pinball !== hoveredMachine) return;
+
       // Unhighlight
-      if (hoveredMachine) hoveredMachine.unhighlight();
+      pinball.unhighlight();
       hoveredMachine = null;
       canvas.style.cursor = 'default';
+
+      console.log('[pinball] clicked, state:', pinball.state);
 
       if (pinball.state === 'empty') {
         // Open card panel for pinball

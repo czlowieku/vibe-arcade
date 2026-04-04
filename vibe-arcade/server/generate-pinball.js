@@ -103,7 +103,15 @@ Return ONLY the JSON object. Nothing else.`;
 export async function generatePinballConfig(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res) {
   const prompt = buildPinballPrompt(genre, theme, modifier, cardLevels, extraInstructions);
 
-  const logEntry = { type: 'pinball', genre, theme, modifier, status: 'generating', message: `Generating pinball: ${genre} + ${theme}`, startTime: Date.now() };
+  const logEntry = {
+    type: 'pinball', genre, theme, modifier, status: 'generating',
+    message: `Generating pinball: ${genre} + ${theme}`,
+    startTime: Date.now(),
+    prompt: prompt,
+    promptLength: prompt.length,
+    model: 'claude-sonnet-4-20250514',
+    response: '',
+  };
   log(logEntry);
 
   res.writeHead(200, {
@@ -145,7 +153,7 @@ export async function generatePinballConfig(genre, theme, modifier, cardLevels, 
   res.write(`data: ${JSON.stringify({ type: 'done', config, tableName: config.tableName || 'PINBALL' })}\n\n`);
   res.end();
 
-  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: config.tableName, codeLength: fullResponse.length });
+  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: config.tableName, codeLength: fullResponse.length, response: fullResponse.slice(0, 2000) });
 
   return config;
 }

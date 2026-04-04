@@ -127,7 +127,15 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
 
   const client = new Anthropic({ apiKey });
 
-  const logEntry = { type: 'game', genre, theme, modifier, status: 'generating', message: `Generating game: ${genre} + ${theme}`, startTime: Date.now() };
+  const logEntry = {
+    type: 'game', genre, theme, modifier, status: 'generating',
+    message: `Generating game: ${genre} + ${theme}`,
+    startTime: Date.now(),
+    prompt: prompt,
+    promptLength: prompt.length,
+    model: 'claude-opus-4-20250514',
+    response: '',
+  };
   log(logEntry);
 
   res.writeHead(200, {
@@ -172,7 +180,7 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   res.write(`data: ${JSON.stringify(result)}\n\n`);
   res.end();
 
-  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length });
+  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length, response: fullCode.slice(0, 2000) });
 
   return result;
 }
