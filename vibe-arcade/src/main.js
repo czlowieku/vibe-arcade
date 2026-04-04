@@ -531,16 +531,73 @@ canvas.addEventListener('drop', (e) => {
 
   let instruction;
   if (card.category === 'modifier') {
-    instruction = `Add this modifier to the game: ${card.name} — ${card.desc}. Integrate it naturally into the existing gameplay.`;
+    instruction = `Add this modifier to the game: ${card.name} — ${card.desc}. Integrate it naturally into the existing gameplay. Make the change VERY visible and impactful.`;
   } else if (card.category === 'theme') {
-    instruction = `Retheme this game with: ${card.name} — ${card.desc}. Change all visuals to match this new theme while keeping gameplay intact.`;
+    instruction = `COMPLETELY retheme this game with: ${card.name} — ${card.desc}. Change ALL colors, ALL visual elements, background, particles, text — everything must match the new theme. The gameplay stays the same but it should LOOK totally different.`;
   } else if (card.category === 'genre') {
-    instruction = `Blend in elements of this genre: ${card.name} — ${card.desc}. Add genre-specific mechanics while keeping the core game working.`;
+    instruction = `Blend in elements of this genre: ${card.name} — ${card.desc}. Add genre-specific mechanics while keeping the core game working. Make the change VERY noticeable.`;
   }
 
+  // Use saved recipe for proper genre/theme context
+  const saved = gameState.machines[machine.index];
+  const recipeGenre = saved?.recipe?.genre || 'custom';
+  const recipeTheme = saved?.recipe?.theme || 'custom';
+  const recipeModifier = saved?.recipe?.modifier || null;
+
+  const extraContext = `The existing game code is:\n${machine.gameCode}\n\nIMPORTANT MODIFICATION REQUEST: ${instruction}\n\nRewrite the ENTIRE game with these changes applied. The changes must be DRAMATIC and OBVIOUS. Keep the same startGame(canvas, onScore, onGameOver) API.`;
+
   activeMachine = machine;
-  document.getElementById('modify-instructions').value = instruction;
-  document.getElementById('btn-do-modify').click();
+  machine.state = 'generating';
+  machine.streamedCode = '';
+
+  fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      genre: recipeGenre,
+      theme: recipeTheme,
+      modifier: recipeModifier,
+      cardLevels: saved?.recipe?.cardLevels || { genre: 1, theme: 1, modifier: 0 },
+      extraInstructions: extraContext,
+      apiKey: getApiKey(),
+    }),
+  }).then(async response => {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+        if (data.type === 'chunk') {
+          machine.streamedCode += data.text;
+          gameManager._drawStreamingScreen(machine, machine.streamedCode);
+        } else if (data.type === 'done') {
+          machine.setGame(data.gameCode, data.title, data.description);
+          gameState.machines[machine.index] = {
+            ...gameState.machines[machine.index],
+            gameCode: data.gameCode,
+            title: data.title,
+            description: data.description,
+            brokenCount: 0,
+          };
+          save();
+        }
+      }
+    }
+  }).catch(err => {
+    console.error('Card drop modify failed:', err);
+    machine.state = 'ready';
+    machine.drawReady();
+  });
+
+  cameraCtrl.zoomTo(machine);
+  hud.showBackButton();
 });
 
 canvas.addEventListener('dragleave', () => {
