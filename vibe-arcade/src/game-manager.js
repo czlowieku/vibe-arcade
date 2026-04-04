@@ -231,6 +231,8 @@ export class GameManager {
   stopGame() {
     this.sandbox.stop();
     window.__vibe_player_playing = false;
+    this.onGameOver = null;
+    this.onScoreUpdate = null;
     if (this.currentMachine) {
       this.currentMachine.state = 'ready';
       this.currentMachine.drawReady();

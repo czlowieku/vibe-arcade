@@ -245,6 +245,7 @@ hud.onBack = () => {
   activeMachine = null;
   hud.hideBackButton();
   hud.hideReviewsButton();
+  hud.hideGameOver();
   hideMachineCards();
   hud.hideKickButton();
   document.getElementById('btn-suggestions').classList.add('hidden');
