@@ -46,6 +46,7 @@ export class NPC {
 
     this.group = new THREE.Group();
     this.group.position.copy(spawnPos);
+    this.group.scale.setScalar(1.5);
 
     this.parts = {};
     this._buildModel();
