@@ -115,6 +115,17 @@ export class CameraController {
     // Prevent context menu on right-click
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
+    // WASD keyboard controls
+    this._keysDown = new Set();
+    window.addEventListener('keydown', (e) => {
+      if (['w','a','s','d','W','A','S','D'].includes(e.key)) {
+        this._keysDown.add(e.key.toLowerCase());
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      this._keysDown.delete(e.key.toLowerCase());
+    });
+
     // Scroll to zoom
     canvas.addEventListener('wheel', (e) => {
       if (this.mode !== 'iso') return;
@@ -244,6 +255,26 @@ export class CameraController {
   }
 
   update() {
+    // WASD movement (works in iso mode)
+    if (this.mode === 'iso' && this._keysDown && this._keysDown.size > 0) {
+      const speed = 0.08;
+      const forward = new THREE.Vector3();
+      this.camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+      if (this._keysDown.has('w')) this.panOffset.add(forward.clone().multiplyScalar(speed));
+      if (this._keysDown.has('s')) this.panOffset.add(forward.clone().multiplyScalar(-speed));
+      if (this._keysDown.has('a')) this.panOffset.add(right.clone().multiplyScalar(-speed));
+      if (this._keysDown.has('d')) this.panOffset.add(right.clone().multiplyScalar(speed));
+
+      // Clamp
+      this.panOffset.x = Math.max(-10, Math.min(10, this.panOffset.x));
+      this.panOffset.z = Math.max(-10, Math.min(10, this.panOffset.z));
+      this._updateOrbitPosition();
+    }
+
     if (!this.isTransitioning) return;
 
     const target = this.targetPosition;
