@@ -290,6 +290,9 @@ hud.onNewGame = () => {
     machine.state = 'empty';
     machine.gameCode = null;
     machine.gameTitle = '';
+    machine.suggestions = [];
+    machine.brokenCount = 0;
+    machine.recipe = null;
     machine._drawEmptyScreen();
     gameState.machines[machine.index] = null;
     save();
