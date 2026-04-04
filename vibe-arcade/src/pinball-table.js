@@ -105,12 +105,16 @@ export class PinballTable {
     ctx.fillText('PINBALL', 128, 64);
     const labelTex = new THREE.CanvasTexture(labelCanvas);
     const labelGeo = new THREE.PlaneGeometry(0.5, 0.25);
+    this._labelCanvas = labelCanvas;
+    this._labelCtx = ctx;
+    this._labelTex = labelTex;
     const labelMesh = new THREE.Mesh(labelGeo, new THREE.MeshStandardMaterial({
       map: labelTex, emissive: 0xffffff, emissiveMap: labelTex, emissiveIntensity: 0.3
     }));
     labelMesh.position.set(0, 1.15, -0.64);
     this.group.add(labelMesh);
     this._previewMeshes.push(labelMesh);
+    this._labelMesh = labelMesh;
 
     // Tilt the whole table slightly (front higher than back, like real pinball)
     this.group.rotation.x = -0.05;
@@ -121,7 +125,19 @@ export class PinballTable {
     this.gameTitle = config.tableName || 'PINBALL';
     this.state = 'ready';
     // Update backbox label with table name
-    // (For simplicity, just change state — full visual update happens on startGame)
+    this._updateLabel(this.gameTitle);
+  }
+
+  _updateLabel(text) {
+    const ctx = this._labelCtx;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, 256, 128);
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 36px Impact, Arial Black, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 64);
+    this._labelTex.needsUpdate = true;
   }
 
   startGame(onScore, onGameOver) {
@@ -152,6 +168,22 @@ export class PinballTable {
 
   update(dt) {
     if (this.engine) this.engine.update(dt);
+    // Generating animation on backbox
+    if (this.state === 'generating') {
+      const dots = '.'.repeat(Math.floor(Date.now() / 400) % 4);
+      const ctx = this._labelCtx;
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, 256, 128);
+      ctx.fillStyle = '#4fc3f7';
+      ctx.font = 'bold 28px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('GENERATING' + dots, 128, 50);
+      ctx.fillStyle = '#888';
+      ctx.font = '16px Arial, sans-serif';
+      ctx.fillText('AI builds your table', 128, 85);
+      this._labelTex.needsUpdate = true;
+    }
   }
 
   handleInput(key, isDown) {

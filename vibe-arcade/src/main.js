@@ -159,6 +159,13 @@ if (gameState.cards.length === 0) {
   saveState(gameState);
 }
 
+// Ensure player has at least one pinball card
+const hasPinball = gameState.cards.some(c => c.cardId.startsWith('pinball-'));
+if (!hasPinball) {
+  gameState.cards.push({ cardId: 'pinball-classic', stars: 1 });
+  saveState(gameState);
+}
+
 function save() {
   saveState(gameState);
 }
