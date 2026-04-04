@@ -109,6 +109,41 @@ export class NpcGameRunner {
     URL.revokeObjectURL(url);
 
     this.running = true;
+    this._crashed = false;
+
+    // Detect crash — if canvas stays blank after 2s, game failed to start
+    this._crashCheckTimer = setTimeout(() => {
+      if (!this.running || this.gameOver) return;
+      try {
+        const pixels = this.ctx.getImageData(100, 100, 10, 10).data;
+        let allBlack = true;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i] > 5 || pixels[i+1] > 5 || pixels[i+2] > 5) { allBlack = false; break; }
+        }
+        if (allBlack) {
+          this._crashed = true;
+          this._drawFallback();
+        }
+      } catch(e) {}
+    }, 2000);
+  }
+
+  _drawFallback() {
+    // Draw a "NOW PLAYING" screen on the hidden canvas so captureFrame has something to show
+    if (!this.ctx) return;
+    this.ctx.fillStyle = '#111';
+    this.ctx.fillRect(0, 0, 800, 600);
+    this.ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    for (let y = 0; y < 600; y += 3) this.ctx.fillRect(0, y, 800, 1);
+    this.ctx.fillStyle = '#4fc3f7';
+    this.ctx.font = 'bold 32px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('NOW PLAYING', 400, 260);
+    this.ctx.fillStyle = '#888';
+    this.ctx.font = '20px Arial, sans-serif';
+    this.ctx.fillText('Score: ' + this.score, 400, 320);
+    this.ctx.font = '48px Arial';
+    this.ctx.fillText('\uD83C\uDFAE', 400, 400);
   }
 
   /**
@@ -195,6 +230,10 @@ export class NpcGameRunner {
   _captureFrame(machine) {
     if (!this.canvas || !machine) return;
     if (!machine.screenCtx || !machine.screenTexture) return;
+    // If game crashed, keep showing fallback with updated score
+    if (this._crashed) {
+      this._drawFallback();
+    }
     try {
       machine.screenCtx.drawImage(this.canvas, 0, 0, 800, 600);
       machine.screenTexture.needsUpdate = true;
@@ -206,6 +245,7 @@ export class NpcGameRunner {
   stop() {
     this.running = false;
     this.gameOver = true;
+    if (this._crashCheckTimer) { clearTimeout(this._crashCheckTimer); this._crashCheckTimer = null; }
 
     // Release any held keys
     for (const key of this._pressedKeys) {
