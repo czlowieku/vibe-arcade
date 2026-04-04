@@ -387,7 +387,7 @@ export class NpcManager {
       gameTitle: machine.gameTitle || 'Unknown',
       machineType: 'arcade',
       machineIndex: machine.index,
-      score: npc.gameRunner ? npc.gameRunner.score : 0,
+      score: gameScore,
       rating: rating,
       skill: npc.getSkillForGenre ? npc.getSkillForGenre(saved?.genre || 'platformer') : 5,
       timestamp: Date.now(),
