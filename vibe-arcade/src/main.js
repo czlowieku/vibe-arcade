@@ -253,30 +253,20 @@ hud.onBack = () => {
 };
 
 hud.onNewGame = () => {
-  // Reset current machine slot and open card panel
+  // Open card panel without deleting the current game — old game stays
+  // until a new one is fully generated and replaces it
   if (gameManager.currentMachine?.state === 'playing') {
     gameManager.stopGame();
   }
   const machine = activeMachine || cameraCtrl.zoomedMachine;
   if (machine) {
-    machine.state = 'empty';
-    machine.gameCode = null;
-    machine.gameTitle = '';
-    machine.suggestions = [];
-    machine.brokenCount = 0;
-    machine.recipe = null;
-    machine._drawEmptyScreen();
-    gameState.machines[machine.index] = null;
-    save();
-
-    // Zoom out, then open card panel for this machine
     cameraCtrl.zoomOut();
     hud.hideBackButton();
     hud.hideGameOver();
     hideMachineCards();
     document.getElementById('btn-suggestions').classList.add('hidden');
 
-    // Slight delay so camera starts zooming, then open panel
+    // Open card panel — old game remains on machine until new one finishes
     setTimeout(() => {
       activeMachine = machine;
       cardUI.hideCardBar();
