@@ -92,9 +92,10 @@ document.getElementById('btn-start-coding').addEventListener('click', () => {
   console.log('[pinball-debug] genre:', genreCard?.id, 'isPinball:', isPinball, 'hasBuildFromConfig:', !!activeMachine?.buildFromConfig, 'apiKey:', !!getApiKey());
 
   if (isPinball && activeMachine && activeMachine.buildFromConfig) {
-    // Pinball generation flow
+    // Pinball generation flow — capture reference before async
+    const pinballRef = activeMachine;
     console.log('[pinball-debug] Starting pinball generation...');
-    activeMachine.state = 'generating';
+    pinballRef.state = 'generating';
 
     const themeCard = getCardById(pendingRecipe.theme.cardId);
     const modifierCard = pendingRecipe.modifier ? getCardById(pendingRecipe.modifier.cardId) : null;
@@ -129,16 +130,17 @@ document.getElementById('btn-start-coding').addEventListener('click', () => {
           const data = JSON.parse(line.slice(6));
           console.log('[pinball-debug] SSE data:', data.type, data.type === 'done' ? data.config?.tableName : '');
           if (data.type === 'done') {
-            activeMachine.buildFromConfig(data.config);
+            pinballRef.buildFromConfig(data.config);
+            console.log('[pinball-debug] Config applied! State:', pinballRef.state);
           } else if (data.type === 'error') {
             console.error('[pinball-debug] Server error:', data.message);
-            activeMachine.state = 'empty';
+            pinballRef.state = 'empty';
           }
         }
       }
     }).catch(err => {
       console.error('Pinball generation failed:', err);
-      activeMachine.state = 'empty';
+      pinballRef.state = 'empty';
     });
 
     cameraCtrl.zoomTo(activeMachine);
