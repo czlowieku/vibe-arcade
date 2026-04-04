@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { log, addLogUpdate } from './logger.js';
 
-export async function reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore) {
+export async function reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats) {
   const client = new Anthropic({ apiKey });
   const startTime = Date.now();
 
@@ -38,7 +38,16 @@ Review this game based on the code quality and the NPC score. Respond in JSON on
   "suggestions": ["<specific improvement 1>", "<specific improvement 2>"]
 }
 
-A score of 0 might mean the NPC was bad at the game, not that the game is broken. Only mark isBroken if the CODE itself has clear errors.`;
+${existingSuggestions && existingSuggestions.length > 0 ? `
+PREVIOUS SUGGESTIONS (from earlier reviews):
+${existingSuggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+If any previous suggestion has been implemented or is no longer relevant, DROP it. Add NEW suggestions you think are important. Replace the entire list — don't just append.` : ''}
+
+${stats ? `PLAY STATISTICS: ${stats.plays} plays, avg score: ${stats.avgScore}, crashes: ${stats.crashes}` : ''}
+
+A score of 0 might mean the NPC was bad at the game, not that the game is broken. Only mark isBroken if the CODE itself has clear errors.
+Give 3-5 specific, actionable suggestions to make the game more fun and polished.`;
 
   addLogUpdate(logEntry.id, { prompt: prompt.slice(0, 2000), promptLength: prompt.length });
 

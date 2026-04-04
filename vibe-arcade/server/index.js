@@ -42,13 +42,13 @@ app.post('/api/generate', async (req, res) => {
 
 
 app.post('/api/review', async (req, res) => {
-  const { apiKey, gameCode, genre, theme, modifier, npcScore } = req.body;
+  const { apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats } = req.body;
   if (!apiKey || !gameCode) {
     return res.status(400).json({ error: 'apiKey and gameCode required' });
   }
   try {
-    console.log(`Reviewing game: ${genre} + ${theme} (score: ${npcScore})`);
-    const review = await reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore);
+    console.log(`Reviewing game: ${genre} + ${theme} (score: ${npcScore}, ${stats?.plays || 0} plays)`);
+    const review = await reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats);
     console.log(`Review result: ${review.rating}★ broken:${review.isBroken} — ${review.feedback?.slice(0, 80)}`);
     res.json(review);
   } catch (err) {
