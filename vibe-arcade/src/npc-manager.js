@@ -362,13 +362,13 @@ export class NpcManager {
     machine.state = 'ready';
     machine.drawReady();
 
+    const saved = this.gameState.machines[machine.index];
     let rating;
     if (hadRunner) {
       // Score-based rating
       rating = this._scoreToRating(gameScore, npc.personality.standards);
     } else {
       // Fallback: old random rating
-      const saved = this.gameState.machines[machine.index];
       const avgStars = saved ? ((saved.cardStars?.genre || 1) + (saved.cardStars?.theme || 1)) / 2 : 1;
       rating = this.reputation.calculateRating(npc.personality.standards, avgStars);
     }
@@ -379,6 +379,24 @@ export class NpcManager {
     const coins = this.reputation.calculatePayment(npc.personality.generosity, rating);
     this.gameState.coins += coins;
     this.gameState.totalNpcCoinsEarned = (this.gameState.totalNpcCoinsEarned || 0) + coins;
+    this.save();
+
+    // Record to history
+    const historyEntry = {
+      npcName: npc.name || 'NPC',
+      gameTitle: machine.gameTitle || 'Unknown',
+      machineType: 'arcade',
+      machineIndex: machine.index,
+      score: npc.gameRunner ? npc.gameRunner.score : 0,
+      rating: rating,
+      skill: npc.getSkillForGenre ? npc.getSkillForGenre(saved?.genre || 'platformer') : 5,
+      timestamp: Date.now(),
+    };
+    if (!this.gameState.npcHistory) this.gameState.npcHistory = [];
+    this.gameState.npcHistory.push(historyEntry);
+    if (this.gameState.npcHistory.length > 50) {
+      this.gameState.npcHistory = this.gameState.npcHistory.slice(-50);
+    }
     this.save();
 
     if (rating >= 5) npc.showEmoticon('🤩');

@@ -21,6 +21,7 @@ const defaultState = {
   totalGamesPlayed: 0,
   machineRatings: Array(6).fill(null),
   totalNpcCoinsEarned: 0,
+  npcHistory: [],
 };
 
 export function loadState() {

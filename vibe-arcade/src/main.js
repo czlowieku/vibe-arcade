@@ -194,6 +194,7 @@ hud.onBack = () => {
   cameraCtrl.zoomOut();
   activeMachine = null;
   hud.hideBackButton();
+  hud.hideKickButton();
   cardUI.showCardBar();
 };
 
@@ -236,6 +237,30 @@ hud.onModifyGame = () => {
       'Current game: ' + (machine.gameTitle || 'Mini Game');
     document.getElementById('modify-instructions').value = '';
     document.getElementById('modify-panel').classList.remove('hidden');
+  }
+};
+
+hud.onKickNpc = () => {
+  if (!activeMachine) return;
+  const machine = activeMachine;
+  if (machine.npcOccupant) {
+    const npc = machine.npcOccupant;
+    npc.showEmoticon('😤');
+    machine.npcOccupant = null;
+    machine.state = 'ready';
+    machine.drawReady();
+    if (npc.gameRunner) {
+      npc.gameRunner.stop();
+      npc.gameRunner = null;
+    }
+    npc.state = 'leaving';
+    npc.targetMachine = null;
+    npc.walkQueue = [
+      new THREE.Vector3(npc.group.position.x, 0, 6),
+      new THREE.Vector3(0, 0, 8),
+    ];
+    hud.hideKickButton();
+    hud.updateDisplay();
   }
 };
 
@@ -397,6 +422,7 @@ canvas.addEventListener('click', (event) => {
         cameraCtrl.zoomTo(machine);
         cardUI.hideCardBar();
         hud.showBackButton();
+        hud.showKickButton();
       }
     } else if (cameraCtrl.isZoomed() && machine === activeMachine) {
       if (machine.state === 'ready') {

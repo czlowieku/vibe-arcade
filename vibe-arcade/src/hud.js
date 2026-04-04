@@ -18,6 +18,9 @@ export class HUD {
     this.reputationEl = document.getElementById('reputation-value');
     this.visitorsEl = document.getElementById('visitors-value');
 
+    this.historyPanel = document.getElementById('history-panel');
+    this.onKickNpc = null;
+
     this.onPlayAgain = null;
     this.onBackToArcade = null;
     this.onBack = null;
@@ -65,6 +68,16 @@ export class HUD {
 
     document.getElementById('btn-close-collection').addEventListener('click', () => {
       document.getElementById('collection-panel').classList.add('hidden');
+    });
+
+    document.getElementById('btn-history').addEventListener('click', () => {
+      this.showHistory();
+    });
+    document.getElementById('btn-close-history').addEventListener('click', () => {
+      this.historyPanel.classList.add('hidden');
+    });
+    document.getElementById('btn-kick-npc').addEventListener('click', () => {
+      if (this.onKickNpc) this.onKickNpc();
     });
 
     document.getElementById('btn-api-key').addEventListener('click', () => {
@@ -236,5 +249,81 @@ export class HUD {
     }
 
     this.cardPackPanel.classList.remove('hidden');
+  }
+
+  showHistory() {
+    const container = document.getElementById('history-table-container');
+    container.replaceChildren();
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    for (const h of ['Gracz', 'Gra', 'Typ', 'Wynik', 'Ocena', 'Skill', 'Kiedy']) {
+      const th = document.createElement('th');
+      th.textContent = h;
+      headerRow.appendChild(th);
+    }
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const history = (this.gameState.npcHistory || []).slice().reverse();
+
+    for (const entry of history) {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      const strong = document.createElement('strong');
+      strong.textContent = entry.npcName;
+      tdName.appendChild(strong);
+      tr.appendChild(tdName);
+
+      const tdGame = document.createElement('td');
+      tdGame.textContent = entry.gameTitle;
+      tr.appendChild(tdGame);
+
+      const tdType = document.createElement('td');
+      tdType.textContent = entry.machineType === 'pinball' ? '🎯' : '🕹️';
+      tr.appendChild(tdType);
+
+      const tdScore = document.createElement('td');
+      tdScore.textContent = (entry.score || 0).toLocaleString();
+      tr.appendChild(tdScore);
+
+      const tdRating = document.createElement('td');
+      tdRating.textContent = '⭐'.repeat(Math.min(entry.rating || 0, 5));
+      tr.appendChild(tdRating);
+
+      const tdSkill = document.createElement('td');
+      tdSkill.textContent = (entry.skill || 5) + '/10';
+      tr.appendChild(tdSkill);
+
+      const tdTime = document.createElement('td');
+      tdTime.textContent = this._timeAgo(entry.timestamp);
+      tr.appendChild(tdTime);
+
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    container.appendChild(table);
+
+    this.historyPanel.classList.remove('hidden');
+  }
+
+  _timeAgo(timestamp) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return seconds + 's';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes + 'min';
+    const hours = Math.floor(minutes / 60);
+    return hours + 'h';
+  }
+
+  showKickButton() {
+    document.getElementById('btn-kick-npc').classList.remove('hidden');
+  }
+
+  hideKickButton() {
+    document.getElementById('btn-kick-npc').classList.add('hidden');
   }
 }
