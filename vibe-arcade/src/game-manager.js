@@ -178,6 +178,7 @@ export class GameManager {
     this.onScoreUpdate = onScoreUpdate;
     this.onGameOver = onGameOver;
     machine.state = 'playing';
+    window.__vibe_player_playing = true;
 
     this.sandbox.load(
       machine.gameCode,
@@ -188,6 +189,7 @@ export class GameManager {
       (finalScore) => {
         const score = finalScore || this.currentScore;
         machine.state = 'ready';
+        window.__vibe_player_playing = false;
 
         if (score > machine.highScore) {
           machine.highScore = score;
@@ -228,6 +230,7 @@ export class GameManager {
 
   stopGame() {
     this.sandbox.stop();
+    window.__vibe_player_playing = false;
     if (this.currentMachine) {
       this.currentMachine.state = 'ready';
       this.currentMachine.drawReady();

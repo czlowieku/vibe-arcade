@@ -129,6 +129,12 @@ export class NpcGameRunner {
     this.inputTimer -= dt;
     if (this.inputTimer > 0) return;
 
+    // Don't dispatch keys while a human player is playing
+    if (window.__vibe_player_playing) {
+      this.inputTimer = 0.5;
+      return;
+    }
+
     // Skill-tiered input: this.skill is 0.1-1.0 (mapped from 1-10)
     let interval, accuracy;
     if (this.skill >= 0.9) {
