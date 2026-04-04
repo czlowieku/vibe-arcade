@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { ArcadeMachine } from './machine.js';
+import { placeModel } from './asset-loader.js';
+
+const M = 'assets/models/';
+const K = 'assets/models/kenney/';
 
 export class ArcadeRoom {
   constructor(scene) {
@@ -8,7 +12,7 @@ export class ArcadeRoom {
     this._buildRoom();
     this._addDecorations();
     this._placeMachines();
-
+    this._placeModels();
   }
 
   _buildRoom() {
@@ -589,5 +593,125 @@ export class ArcadeRoom {
     }
 
     return meshes;
+  }
+
+  async _placeModels() {
+    const s = this.scene;
+
+    // === VENDING MACHINE — left wall, near coin change machine ===
+    placeModel(s, M + 'vending-machine.glb', {
+      position: [-7, 0, 0], rotation: [0, Math.PI / 2, 0], scale: 1.2,
+    });
+
+    // === SOFA — right wall, chill area ===
+    placeModel(s, M + 'sofa.glb', {
+      position: [7, 0, 2], rotation: [0, -Math.PI / 2, 0], scale: 1.5,
+    });
+
+    // === TROPHY on counter ===
+    placeModel(s, M + 'trophy.glb', {
+      position: [4.5, 1.2, 6], scale: 0.4,
+    });
+
+    // === PLANTS — corners ===
+    placeModel(s, M + 'small-plant.glb', {
+      position: [-7.2, 0, -7], scale: 2.0,
+    });
+    placeModel(s, M + 'small-plant.glb', {
+      position: [7.2, 0, -7], scale: 2.0,
+    });
+
+    // === KENNEY FURNITURE ===
+
+    // Lounge sofa — waiting area near entrance
+    placeModel(s, K + 'loungeSofa.glb', {
+      position: [-6, 0, 5], rotation: [0, Math.PI / 2, 0], scale: 2.0,
+    });
+
+    // Coffee table in front of lounge sofa
+    placeModel(s, K + 'tableCoffee.glb', {
+      position: [-5, 0, 5], scale: 2.0,
+    });
+
+    // Potted plant near entrance
+    placeModel(s, K + 'pottedPlant.glb', {
+      position: [7.2, 0, 7], scale: 2.5,
+    });
+
+    // Small plants on windowsills
+    placeModel(s, K + 'plantSmall1.glb', {
+      position: [-5, 1.5, 7.8], scale: 2.0,
+    });
+    placeModel(s, K + 'plantSmall2.glb', {
+      position: [5, 1.5, 7.8], scale: 2.0,
+    });
+
+    // Speakers — music in the arcade
+    placeModel(s, K + 'speaker.glb', {
+      position: [-7.5, 2.5, -7.5], rotation: [0, Math.PI / 4, 0], scale: 3.0,
+    });
+    placeModel(s, K + 'speaker.glb', {
+      position: [7.5, 2.5, -7.5], rotation: [0, -Math.PI / 4, 0], scale: 3.0,
+    });
+
+    // Vintage TV on wall — shows "attract mode"
+    placeModel(s, K + 'televisionVintage.glb', {
+      position: [0, 3.5, -7.9], scale: 3.0,
+    });
+
+    // Bookcase with games/stuff — left wall
+    placeModel(s, K + 'bookcaseOpen.glb', {
+      position: [-7.3, 0, -5], rotation: [0, Math.PI / 2, 0], scale: 2.5,
+    });
+
+    // Books on bookcase
+    placeModel(s, K + 'books.glb', {
+      position: [-7.3, 1.2, -5], rotation: [0, Math.PI / 2, 0], scale: 2.5,
+    });
+
+    // Bar stools at counter
+    placeModel(s, K + 'stoolBar.glb', {
+      position: [5.5, 0, 5], scale: 2.0,
+    });
+    placeModel(s, K + 'stoolBar.glb', {
+      position: [4.5, 0, 5], scale: 2.0,
+    });
+
+    // Rug in center area
+    placeModel(s, K + 'rugRound.glb', {
+      position: [0, 0.01, 0], scale: 4.0,
+    });
+
+    // Ceiling fan
+    placeModel(s, K + 'ceilingFan.glb', {
+      position: [0, 5.8, 0], scale: 3.0,
+    });
+
+    // Radio on counter
+    placeModel(s, K + 'radio.glb', {
+      position: [6.2, 1.2, 6], scale: 2.0,
+    });
+
+    // Trashcan near door (replaces procedural one? or second one)
+    placeModel(s, K + 'trashcan.glb', {
+      position: [-1.8, 0, 7.5], scale: 2.5,
+    });
+
+    // Pillows on sofa area
+    placeModel(s, K + 'pillow.glb', {
+      position: [-6, 0.6, 5.2], rotation: [0, 0.3, 0], scale: 2.0,
+    });
+
+    // Lamp next to sofa
+    placeModel(s, K + 'lampRoundFloor.glb', {
+      position: [-6, 0, 3.5], scale: 2.5,
+    });
+
+    // Second plant — right wall corner
+    placeModel(s, K + 'plantSmall3.glb', {
+      position: [7.2, 0, -3], scale: 2.5,
+    });
+
+    console.log('[arcade] Loading 3D models...');
   }
 }
