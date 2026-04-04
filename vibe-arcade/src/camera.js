@@ -224,8 +224,8 @@ export class CameraController {
       machine.group.getWorldPosition(targetPos);
       targetPos.y += 0.85; // playfield height
       this.targetLookAt.copy(targetPos);
-      // Camera above and slightly in front, looking down
-      this.targetPosition.set(targetPos.x, targetPos.y + 2.5, targetPos.z + 1.2);
+      // Camera above, close and angled — good view of playfield
+      this.targetPosition.set(targetPos.x, targetPos.y + 1.5, targetPos.z + 0.8);
     }
   }
 

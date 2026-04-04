@@ -116,6 +116,8 @@ export class PinballTable {
     this._previewMeshes.push(labelMesh);
     this._labelMesh = labelMesh;
 
+    // Scale up to real-world pinball size (about 2x)
+    this.group.scale.set(2, 2, 2);
     // Tilt the whole table slightly (front higher than back, like real pinball)
     this.group.rotation.x = -0.05;
   }
