@@ -467,7 +467,11 @@ export class NpcManager {
           const lastEntry = [...this.gameState.npcHistory].reverse().find(
             e => e.machineIndex === machine.index
           );
-          if (lastEntry) { lastEntry.aiFeedback = review.feedback; this.save(); }
+          if (lastEntry) {
+            lastEntry.aiFeedback = review.feedback;
+            lastEntry.aiSuggestions = review.suggestions || [];
+            this.save();
+          }
         }
       });
     }

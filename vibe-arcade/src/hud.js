@@ -397,6 +397,32 @@ export class HUD {
         details.appendChild(time);
 
         item.appendChild(details);
+
+        // AI feedback
+        if (r.aiFeedback) {
+          const feedback = document.createElement('div');
+          feedback.className = 'review-feedback';
+          feedback.textContent = r.aiFeedback;
+          item.appendChild(feedback);
+        }
+
+        // AI suggestions
+        if (r.aiSuggestions && r.aiSuggestions.length > 0) {
+          const sugBox = document.createElement('div');
+          sugBox.className = 'review-suggestions';
+          const sugTitle = document.createElement('div');
+          sugTitle.className = 'review-suggestions-title';
+          sugTitle.textContent = '💡 Sugestie:';
+          sugBox.appendChild(sugTitle);
+          for (const s of r.aiSuggestions) {
+            const sug = document.createElement('div');
+            sug.className = 'review-suggestion-item';
+            sug.textContent = '• ' + s;
+            sugBox.appendChild(sug);
+          }
+          item.appendChild(sugBox);
+        }
+
         list.appendChild(item);
       }
     }
