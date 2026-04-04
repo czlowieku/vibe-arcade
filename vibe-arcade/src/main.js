@@ -145,8 +145,13 @@ for (let i = 0; i < gameState.machines.length; i++) {
     machine.highScore = saved.highScore || 0;
     machine.suggestions = saved.suggestions || [];
     machine.brokenCount = saved.brokenCount || 0;
+    machine.regenAttempts = saved.regenAttempts || 0;
     machine.recipe = saved.recipe || null;
-    machine.drawReady();
+    if (saved.broken) {
+      machine.drawBroken();
+    } else {
+      machine.drawReady();
+    }
   }
 }
 

@@ -324,6 +324,32 @@ export class ArcadeMachine {
     this.drawReady();
   }
 
+  drawBroken() {
+    this.state = 'broken';
+    const ctx = this.screenCtx;
+    ctx.fillStyle = '#1a0a0a';
+    ctx.fillRect(0, 0, 800, 600);
+
+    // Static noise
+    for (let i = 0; i < 3000; i++) {
+      const x = Math.random() * 800;
+      const y = Math.random() * 600;
+      const c = Math.floor(Math.random() * 40);
+      ctx.fillStyle = `rgb(${c},${c},${c})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 42px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠ OUT OF ORDER', 400, 260);
+    ctx.fillStyle = '#888';
+    ctx.font = '18px Courier New';
+    ctx.fillText('This game is broken', 400, 310);
+    ctx.fillText('Click NEW GAME to replace', 400, 340);
+    this.screenTexture.needsUpdate = true;
+  }
+
   updateScreenTexture() {
     this.screenTexture.needsUpdate = true;
   }

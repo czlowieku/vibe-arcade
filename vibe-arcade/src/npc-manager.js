@@ -435,16 +435,34 @@ export class NpcManager {
         // Track broken games
         if (review.isBroken || (npc._crashCount || 0) > 0) {
           machine.brokenCount = (machine.brokenCount || 0) + 1;
+          machine.regenAttempts = machine.regenAttempts || 0;
           const saved = this.gameState.machines[machine.index];
-          if (saved) saved.brokenCount = machine.brokenCount;
+          if (saved) {
+            saved.brokenCount = machine.brokenCount;
+            saved.regenAttempts = machine.regenAttempts;
+          }
           this.save();
 
           if (machine.brokenCount >= 2 && saved?.recipe) {
-            console.log(`Auto-regenerating broken game on machine ${machine.index}`);
-            machine.brokenCount = 0;
-            if (saved) saved.brokenCount = 0;
-            this.save();
-            this._autoRegenerate(machine, saved.recipe, review.feedback);
+            if (machine.regenAttempts < 2) {
+              // Try to regenerate
+              machine.regenAttempts++;
+              machine.brokenCount = 0;
+              if (saved) {
+                saved.brokenCount = 0;
+                saved.regenAttempts = machine.regenAttempts;
+              }
+              this.save();
+              console.log(`Auto-regenerating broken game on machine ${machine.index} (attempt ${machine.regenAttempts}/2)`);
+              this._autoRegenerate(machine, saved.recipe, review.feedback);
+            } else {
+              // Give up — mark machine as broken, NPCs skip it
+              console.log(`Machine ${machine.index} permanently broken after 2 regen attempts`);
+              machine.state = 'broken';
+              if (saved) saved.broken = true;
+              this.save();
+              machine.drawBroken();
+            }
           }
         }
 
