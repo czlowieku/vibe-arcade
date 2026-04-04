@@ -407,36 +407,35 @@ export class NpcManager {
     }
     this.save();
 
-    // --- Heuristic health tracking (no API calls) ---
+    // --- Health tracking + periodic AI review ---
     const crashCount = npc._crashCount || 0;
-    if (!machine._healthStats) machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0 };
+    if (!machine._healthStats) machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0, lastReviewAt: 0 };
     machine._healthStats.plays++;
     machine._healthStats.totalScore += gameScore;
     if (crashCount > 0) machine._healthStats.crashes++;
     if (gameScore === 0) machine._healthStats.zeroScores++;
 
-    // Detect suspicious machine: 3+ plays with all zero scores or high crash rate
     const stats = machine._healthStats;
-    const isSuspicious = stats.plays >= 3 && (
-      stats.zeroScores >= 3 ||
-      stats.crashes >= 2
-    );
+    const playsSinceReview = stats.plays - stats.lastReviewAt;
 
-    if (isSuspicious && !machine._aiReviewed) {
-      // One-time AI review for suspicious machines
-      machine._aiReviewed = true;
-      console.log(`[review] Machine ${machine.index} is suspicious (${stats.zeroScores} zero scores, ${stats.crashes} crashes in ${stats.plays} plays) — requesting AI review`);
+    // Review triggers:
+    // - Suspicious: 3+ plays with all zero scores or high crash rate (urgent)
+    // - Periodic: every 5 plays for all machines (keeps suggestions fresh)
+    const isSuspicious = stats.plays >= 3 && (stats.zeroScores >= 3 || stats.crashes >= 2);
+    const isDueForReview = playsSinceReview >= 5;
+
+    if ((isSuspicious || isDueForReview) && !machine._reviewInProgress) {
+      machine._reviewInProgress = true;
+      stats.lastReviewAt = stats.plays;
+      console.log(`[review] Machine ${machine.index}: ${isSuspicious ? 'suspicious' : 'periodic'} review (${stats.plays} plays, avg score: ${Math.round(stats.totalScore / stats.plays)})`);
 
       this._callReview(machine, gameScore, crashCount).then(review => {
+        machine._reviewInProgress = false;
         if (!review) return;
 
-        // Store suggestions
+        // Replace suggestions with fresh ones from AI
         if (review.suggestions && review.suggestions.length > 0) {
-          if (!machine.suggestions) machine.suggestions = [];
-          for (const s of review.suggestions) {
-            if (!machine.suggestions.includes(s)) machine.suggestions.push(s);
-          }
-          if (machine.suggestions.length > 5) machine.suggestions = machine.suggestions.slice(-5);
+          machine.suggestions = review.suggestions.slice(0, 5);
           const saved = this.gameState.machines[machine.index];
           if (saved) { saved.suggestions = machine.suggestions; this.save(); }
         }
@@ -448,15 +447,15 @@ export class NpcManager {
 
           if (machine.regenAttempts < 2 && saved?.recipe) {
             machine.regenAttempts++;
-            machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0 };
-            machine._aiReviewed = false; // allow re-review after regen
+            machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0, lastReviewAt: 0 };
             if (saved) saved.regenAttempts = machine.regenAttempts;
             this.save();
             console.log(`Auto-regenerating machine ${machine.index} (attempt ${machine.regenAttempts}/2)`);
             this._autoRegenerate(machine, saved.recipe, review.feedback);
-          } else {
+          } else if (machine.regenAttempts >= 2) {
             console.log(`Machine ${machine.index} permanently broken after 2 regen attempts`);
             machine.state = 'broken';
+            const saved = this.gameState.machines[machine.index];
             if (saved) saved.broken = true;
             this.save();
             machine.drawBroken();
@@ -484,20 +483,23 @@ export class NpcManager {
   }
 
   _scoreToRating(score, standards) {
-    // Map game score to base star rating
+    // Base rating: more generous curve — most working games get 3+
     let baseRating;
-    if (score >= 500) {
-      baseRating = 4 + Math.random();        // 4-5
-    } else if (score >= 200) {
-      baseRating = 3 + Math.random();        // 3-4
-    } else if (score >= 50) {
-      baseRating = 2 + Math.random();        // 2-3
+    if (score >= 300) {
+      baseRating = 4.5 + Math.random() * 0.5;  // 4.5-5
+    } else if (score >= 100) {
+      baseRating = 3.5 + Math.random();         // 3.5-4.5
+    } else if (score >= 20) {
+      baseRating = 2.5 + Math.random();         // 2.5-3.5
+    } else if (score > 0) {
+      baseRating = 2 + Math.random();           // 2-3
     } else {
-      baseRating = 1 + Math.random();        // 1-2
+      // Score 0 — could be broken or just hard game
+      baseRating = 1.5 + Math.random();         // 1.5-2.5
     }
 
-    // Modulate by NPC standards (high standards = slightly harsher)
-    const standardsModifier = (standards - 0.5) * 0.8;
+    // Small personality modifier (±0.3 max, not ±0.4)
+    const standardsModifier = (standards - 0.5) * 0.6;
     const finalRating = baseRating - standardsModifier;
     return Math.max(1, Math.min(5, Math.round(finalRating)));
   }
@@ -509,6 +511,7 @@ export class NpcManager {
     console.log(`[review] Reviewing machine ${machine.index}, score: ${gameScore}`);
 
     const saved = this.gameState.machines[machine.index];
+    const stats = machine._healthStats || {};
     try {
       const resp = await fetch('/api/review', {
         method: 'POST',
@@ -520,6 +523,8 @@ export class NpcManager {
           theme: saved?.recipe?.theme || 'unknown',
           modifier: saved?.recipe?.modifier || null,
           npcScore: gameScore,
+          existingSuggestions: machine.suggestions || [],
+          stats: { plays: stats.plays || 0, avgScore: stats.plays ? Math.round(stats.totalScore / stats.plays) : 0, crashes: stats.crashes || 0 },
         }),
       });
       if (!resp.ok) { console.warn('[review] API returned', resp.status); return null; }
