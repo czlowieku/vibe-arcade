@@ -120,6 +120,7 @@
     <div id="buy-pack" class="hidden">
       <button id="btn-buy-pack">📦 BUY PACK (100 💰)</button>
       <button id="btn-collection">📖 COLLECTION</button>
+      <button id="btn-history">📋 HISTORIA</button>
       <button id="btn-api-key">🔑 API KEY</button>
     </div>
 
@@ -135,11 +136,21 @@
       </div>
     </div>
 
+    <!-- History Panel -->
+    <div id="history-panel" class="hidden">
+      <div id="history-panel-inner">
+        <h2>📋 HISTORIA GIER</h2>
+        <div id="history-table-container"></div>
+        <button id="btn-close-history">ZAMKNIJ</button>
+      </div>
+    </div>
+
     <!-- Back button when zoomed -->
     <div id="back-button" class="hidden">
       <button id="btn-back">← BACK</button>
       <button id="btn-modify-game">✏️ MODIFY</button>
       <button id="btn-new-game">🔄 NEW GAME</button>
+      <button id="btn-kick-npc" class="hidden">👟 KICK</button>
     </div>
 
     <!-- Iframe sandbox container (hidden) -->
@@ -149,7 +160,8 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "./node_modules/three/build/three.module.js"
+      "three": "./node_modules/three/build/three.module.js",
+      "cannon-es": "./node_modules/cannon-es/dist/cannon-es.js"
     }
   }
   </script>
