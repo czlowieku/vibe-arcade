@@ -132,7 +132,7 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   res.write(`data: ${JSON.stringify(result)}\n\n`);
   res.end();
 
-  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length, response: fullCode.slice(0, 2000) });
+  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length, response: fullCode.slice(0, 5000) });
 
   return result;
 }
