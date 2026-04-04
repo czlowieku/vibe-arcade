@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getRandomName } from './npc-names.js';
 
 const SKIN_TONES = [0xffdbac, 0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524];
 const SHIRT_COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0x9b59b6, 0xf39c12, 0x1abc9c, 0xe67e22, 0x2c3e50, 0xd35400, 0x7f8c8d];
@@ -29,7 +30,8 @@ export class NPC {
     this.state = STATES.SPAWNING;
     this.personality = personality; // { patience, generosity, standards }
     this.partnerId = partnerId;
-    this.skill = 0.2 + Math.random() * 0.8; // 0.2 to 1.0
+    this.name = getRandomName();
+    this.skills = this._generateSkills(); // per-genre skills 1-10
     this.targetMachine = null;
     this.walkQueue = [];
     this.stateTimer = 0;
@@ -50,6 +52,26 @@ export class NPC {
 
     this.parts = {};
     this._buildModel();
+  }
+
+  _generateSkills() {
+    const genres = ['platformer', 'shooter', 'puzzle', 'runner', 'dodge',
+      'pinball-classic', 'pinball-roguelike', 'pinball-hyper', 'pinball-multiball'];
+    const skills = {};
+    for (const g of genres) {
+      // Gaussian-ish: center 5, most 3-7, rare 1-2 or 9-10
+      const raw = 5 + (Math.random() + Math.random() + Math.random() - 1.5) * 2.7;
+      skills[g] = Math.max(1, Math.min(10, Math.round(raw)));
+    }
+    return skills;
+  }
+
+  getSkillForGenre(genre) {
+    return this.skills[genre] || 5;
+  }
+
+  getSkillNormalized(genre) {
+    return this.getSkillForGenre(genre) / 10;
   }
 
   _buildModel() {
