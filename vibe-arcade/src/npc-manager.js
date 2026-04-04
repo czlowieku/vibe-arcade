@@ -636,13 +636,20 @@ export class NpcManager {
     const MACHINE_RADIUS = 0.7;
     const PUSH_STRENGTH = 2.0;
 
-    // NPC vs NPC
+    const LEAVING_STATES = [STATES.LEAVING, STATES.DESPAWNING, STATES.SPAWNING, STATES.ENTERING];
+
+    // NPC vs NPC (skip if either is near the door — entering/leaving)
     for (let i = 0; i < this.npcs.length; i++) {
       const a = this.npcs[i];
       if (a.dead) continue;
+      const aLeaving = LEAVING_STATES.includes(a.state);
       for (let j = i + 1; j < this.npcs.length; j++) {
         const b = this.npcs[j];
         if (b.dead) continue;
+        const bLeaving = LEAVING_STATES.includes(b.state);
+        // Skip collision if either is entering/leaving (door area)
+        if (aLeaving || bLeaving) continue;
+
         const dx = a.group.position.x - b.group.position.x;
         const dz = a.group.position.z - b.group.position.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
@@ -651,7 +658,6 @@ export class NpcManager {
           const overlap = (minDist - dist) * 0.5;
           const nx = dx / dist;
           const nz = dz / dist;
-          // Only push NPCs that are walking (not playing/waiting)
           const aWalking = a.walkQueue.length > 0;
           const bWalking = b.walkQueue.length > 0;
           if (aWalking) { a.group.position.x += nx * overlap; a.group.position.z += nz * overlap; }
