@@ -6,6 +6,8 @@ const defaultState = {
   cards: [],
   machines: Array(6).fill(null),
   totalGamesPlayed: 0,
+  machineRatings: Array(6).fill(null),
+  totalNpcCoinsEarned: 0,
 };
 
 export function loadState() {

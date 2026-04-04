@@ -158,6 +158,97 @@ export class ArcadeRoom {
     const fillLight = new THREE.DirectionalLight(0xfffbe8, 0.3);
     fillLight.position.set(5, 8, 10);
     this.scene.add(fillLight);
+
+    // === FRONT WALL with door opening ===
+    // Left section of front wall (x: -8 to -1.5)
+    const fwLeft = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 6), wallMat);
+    fwLeft.position.set(-4.75, 3, 8);
+    fwLeft.rotation.y = Math.PI;
+    this.scene.add(fwLeft);
+
+    // Right section of front wall (x: 1.5 to 8)
+    const fwRight = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 6), wallMat);
+    fwRight.position.set(4.75, 3, 8);
+    fwRight.rotation.y = Math.PI;
+    this.scene.add(fwRight);
+
+    // Above door section (x: -1.5 to 1.5, y: 2.5 to 6)
+    const fwAbove = new THREE.Mesh(new THREE.PlaneGeometry(3, 3.5), wallMat);
+    fwAbove.position.set(0, 4.25, 8);
+    fwAbove.rotation.y = Math.PI;
+    this.scene.add(fwAbove);
+
+    // Door frame (dark wood)
+    const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6 });
+    const dfLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 0.15), doorFrameMat);
+    dfLeft.position.set(-1.5, 1.25, 8);
+    this.scene.add(dfLeft);
+    const dfRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 0.15), doorFrameMat);
+    dfRight.position.set(1.5, 1.25, 8);
+    this.scene.add(dfRight);
+    const dfTop = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), doorFrameMat);
+    dfTop.position.set(0, 2.55, 8);
+    this.scene.add(dfTop);
+
+    // Glass door panels (semi-transparent)
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x88ccee, transparent: true, opacity: 0.25, roughness: 0.1, metalness: 0.3,
+    });
+    const doorL = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.4), glassMat);
+    doorL.position.set(-0.75, 1.25, 8);
+    doorL.rotation.y = Math.PI;
+    this.scene.add(doorL);
+    const doorR = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.4), glassMat);
+    doorR.position.set(0.75, 1.25, 8);
+    doorR.rotation.y = Math.PI;
+    this.scene.add(doorR);
+
+    // Window vitrines on front wall
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x99ccdd, transparent: true, opacity: 0.2, roughness: 0.1, metalness: 0.2,
+    });
+    const winL = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.5), windowMat);
+    winL.position.set(-5, 2.5, 7.99);
+    winL.rotation.y = Math.PI;
+    this.scene.add(winL);
+    const winR = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.5), windowMat);
+    winR.position.set(5, 2.5, 7.99);
+    winR.rotation.y = Math.PI;
+    this.scene.add(winR);
+
+    // "OPEN" sign above door
+    const openCanvas = document.createElement('canvas');
+    openCanvas.width = 128;
+    openCanvas.height = 48;
+    const oCtx = openCanvas.getContext('2d');
+    oCtx.fillStyle = '#27ae60';
+    oCtx.fillRect(0, 0, 128, 48);
+    oCtx.fillStyle = '#fff';
+    oCtx.font = 'bold 28px Arial';
+    oCtx.textAlign = 'center';
+    oCtx.textBaseline = 'middle';
+    oCtx.fillText('OPEN', 64, 24);
+    const openTexture = new THREE.CanvasTexture(openCanvas);
+    const openSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.6, 0.22),
+      new THREE.MeshStandardMaterial({ map: openTexture, emissive: 0xffffff, emissiveMap: openTexture, emissiveIntensity: 0.4 })
+    );
+    openSign.position.set(0, 2.75, 8.01);
+    openSign.rotation.y = Math.PI;
+    this.scene.add(openSign);
+
+    // Entrance light above door
+    const entranceLight = new THREE.PointLight(0xfff5e0, 0.8, 8);
+    entranceLight.position.set(0, 3.5, 8.5);
+    this.scene.add(entranceLight);
+
+    // Front baseboards
+    const bbFrontL = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 0.08), baseboardMat);
+    bbFrontL.position.set(-4.75, 0.1, 7.96);
+    this.scene.add(bbFrontL);
+    const bbFrontR = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 0.08), baseboardMat);
+    bbFrontR.position.set(4.75, 0.1, 7.96);
+    this.scene.add(bbFrontR);
   }
 
   _drawStar(ctx, cx, cy, radius, points) {

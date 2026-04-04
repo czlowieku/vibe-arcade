@@ -4,8 +4,11 @@ import { CameraController } from './camera.js';
 import { CardUI } from './card-ui.js';
 import { GameManager } from './game-manager.js';
 import { HUD } from './hud.js';
+import { Reputation } from './reputation.js';
+import { NpcManager } from './npc-manager.js';
 import { loadState, saveState } from './storage.js';
 import { getStarterPack, getCardById, CARDS } from './card-system.js';
+import { Exterior } from './exterior.js';
 
 // --- Prompt Panel ---
 let pendingRecipe = null;
@@ -113,8 +116,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xe8e0d0);
-// Warm, bright arcade atmosphere
+scene.background = new THREE.Color(0x87CEEB);
+// Sky blue background
 
 // Perspective camera — better for raycasting and more immersive
 const aspect = window.innerWidth / window.innerHeight;
@@ -123,9 +126,14 @@ const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
 // --- Controllers ---
 const cameraCtrl = new CameraController(camera);
 const arcadeRoom = new ArcadeRoom(scene);
+const exterior = new Exterior(scene);
 
 // --- Game Manager ---
 const gameManager = new GameManager(gameState, save);
+
+// --- Reputation & NPC System ---
+const reputation = new Reputation(gameState, save);
+const npcManager = new NpcManager(scene, arcadeRoom.machines, reputation, gameState, save);
 
 // --- Restore saved machines ---
 for (let i = 0; i < gameState.machines.length; i++) {
@@ -438,8 +446,14 @@ window.addEventListener('resize', () => {
 function animate() {
   requestAnimationFrame(animate);
 
+  const now = performance.now();
+  const dt = Math.min((now - (animate.lastTime || now)) / 1000, 0.1);
+  animate.lastTime = now;
+
   cameraCtrl.update();
   gameManager.updateMachineTexture();
+  npcManager.update(dt);
+  hud.updateNpcDisplay(reputation.getReputation(), npcManager.getNpcCount());
 
   renderer.render(scene, camera);
 }

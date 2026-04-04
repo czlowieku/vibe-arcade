@@ -13,11 +13,12 @@ const CABINET_COLORS = [
 export class ArcadeMachine {
   constructor(index, position, rotation = 0) {
     this.index = index;
-    this.state = 'empty'; // empty | generating | ready | playing
+    this.state = 'empty'; // empty | generating | ready | playing | occupied_npc
     this.gameCode = null;
     this.gameTitle = '';
     this.group = new THREE.Group();
     this.highScore = 0;
+    this.npcOccupant = null; // NPC currently playing
 
     // Screen canvas for CanvasTexture
     this.screenCanvas = document.createElement('canvas');
