@@ -211,7 +211,16 @@ export class NPC {
     this.parts.body.rotation.z = 0;
     this.parts.body.position.y = 0.525;
 
-    if (isWalking && this.walkQueue.length > 0) {
+    // Track actual movement to detect being stuck
+    const px = this.group.position.x;
+    const pz = this.group.position.z;
+    if (!this._lastPos) this._lastPos = { x: px, z: pz };
+    const moved = Math.abs(px - this._lastPos.x) + Math.abs(pz - this._lastPos.z);
+    this._lastPos.x = px;
+    this._lastPos.z = pz;
+    const actuallyMoving = moved > 0.001;
+
+    if (isWalking && this.walkQueue.length > 0 && actuallyMoving) {
       // Leg swing
       const swing = Math.sin(t * 8) * 0.45;
       this.parts.leftLegPivot.rotation.x = swing;
