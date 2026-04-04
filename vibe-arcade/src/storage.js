@@ -1,4 +1,17 @@
 const STORAGE_KEY = 'vibe-arcade';
+const API_KEY_KEY = 'vibe-arcade-api-key';
+
+export function getApiKey() {
+  return localStorage.getItem(API_KEY_KEY) || '';
+}
+
+export function setApiKey(key) {
+  if (key) {
+    localStorage.setItem(API_KEY_KEY, key);
+  } else {
+    localStorage.removeItem(API_KEY_KEY);
+  }
+}
 
 const defaultState = {
   coins: 0,

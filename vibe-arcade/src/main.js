@@ -6,7 +6,7 @@ import { GameManager } from './game-manager.js';
 import { HUD } from './hud.js';
 import { Reputation } from './reputation.js';
 import { NpcManager } from './npc-manager.js';
-import { loadState, saveState } from './storage.js';
+import { loadState, saveState, getApiKey } from './storage.js';
 import { getStarterPack, getCardById, CARDS } from './card-system.js';
 import { Exterior } from './exterior.js';
 
@@ -261,6 +261,7 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
       modifier: null,
       cardLevels: { genre: 1, theme: 1, modifier: 0 },
       extraInstructions: extraContext,
+      apiKey: getApiKey(),
     }),
   }).then(async response => {
     const reader = response.body.getReader();

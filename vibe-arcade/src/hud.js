@@ -1,4 +1,5 @@
 import { generateCardPack, addCardToInventory, getCardById, PACK_COST, CARDS, ALL_CARDS } from './card-system.js';
+import { getApiKey, setApiKey } from './storage.js';
 
 export class HUD {
   constructor(gameState, saveCallback) {
@@ -65,6 +66,30 @@ export class HUD {
     document.getElementById('btn-close-collection').addEventListener('click', () => {
       document.getElementById('collection-panel').classList.add('hidden');
     });
+
+    document.getElementById('btn-api-key').addEventListener('click', () => {
+      const input = document.getElementById('api-key-input');
+      input.value = getApiKey();
+      document.getElementById('api-key-panel').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-save-key').addEventListener('click', () => {
+      const key = document.getElementById('api-key-input').value.trim();
+      setApiKey(key);
+      document.getElementById('api-key-panel').classList.add('hidden');
+      this._updateApiKeyButton();
+    });
+
+    document.getElementById('btn-cancel-key').addEventListener('click', () => {
+      document.getElementById('api-key-panel').classList.add('hidden');
+    });
+
+    this._updateApiKeyButton();
+  }
+
+  _updateApiKeyButton() {
+    const btn = document.getElementById('btn-api-key');
+    btn.textContent = getApiKey() ? '🔑 API KEY ✓' : '🔑 API KEY';
   }
 
   showCollection() {
@@ -130,12 +155,11 @@ export class HUD {
     this.coinsEl.textContent = this.gameState.coins;
     this.levelEl.textContent = Math.floor(this.gameState.totalGamesPlayed / 5) + 1;
 
-    // Show/hide buy pack button
-    if (this.gameState.coins >= PACK_COST) {
-      this.buyPackEl.classList.remove('hidden');
-    } else {
-      this.buyPackEl.classList.add('hidden');
-    }
+    // Always show buy-pack bar (contains API key button too)
+    this.buyPackEl.classList.remove('hidden');
+    // Disable/enable buy pack button based on coins
+    const buyBtn = document.getElementById('btn-buy-pack');
+    buyBtn.disabled = this.gameState.coins < PACK_COST;
   }
 
   showGameOver(score, coinsEarned) {

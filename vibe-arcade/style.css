@@ -630,6 +630,8 @@ body {
   bottom: 80px;
   right: 24px;
   z-index: 10;
+  display: flex;
+  gap: 8px;
 }
 
 #btn-buy-pack {
@@ -646,9 +648,126 @@ body {
   box-shadow: 0 2px 10px rgba(243,156,18,0.3);
 }
 
-#btn-buy-pack:hover {
+#btn-buy-pack:hover:not(:disabled) {
   box-shadow: 0 4px 18px rgba(243,156,18,0.5);
   transform: scale(1.05);
+}
+
+#btn-buy-pack:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#btn-api-key {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 10px rgba(44,62,80,0.3);
+}
+
+#btn-api-key:hover {
+  box-shadow: 0 4px 18px rgba(44,62,80,0.5);
+  transform: scale(1.05);
+}
+
+/* API Key Panel */
+#api-key-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  backdrop-filter: blur(8px);
+}
+
+#api-key-panel-inner {
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+
+#api-key-panel h2 {
+  color: #2c3e50;
+  font-size: 22px;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+#api-key-panel p {
+  color: #777;
+  font-size: 13px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+#api-key-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+
+#api-key-input:focus {
+  outline: none;
+  border-color: #2c3e50;
+  box-shadow: 0 0 0 3px rgba(44,62,80,0.1);
+}
+
+#api-key-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#btn-save-key {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #27ae60, #219a52);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#btn-save-key:hover {
+  box-shadow: 0 4px 16px rgba(39,174,96,0.4);
+  transform: scale(1.05);
+}
+
+#btn-cancel-key {
+  padding: 12px 24px;
+  background: #e8e4dc;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#btn-cancel-key:hover {
+  background: #ddd8ce;
 }
 
 /* Back button */

@@ -1,8 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeGameCode } from './sanitize.js';
 
-const client = new Anthropic();
-
 const GENRE_DESCRIPTIONS = {
   platformer: 'A side-scrolling platformer where the player jumps between platforms, avoids hazards, and collects items. Player moves left/right and jumps.',
   shooter: 'A top-down or side-scrolling shooter where the player fires projectiles at enemies. Enemies spawn in waves and drop toward the player.',
@@ -123,8 +121,10 @@ The code must be a complete, self-contained script that defines startGame at the
 }
 
 // Streaming version — sends SSE events as code is generated
-export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, res) {
+export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res) {
   const prompt = buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
+
+  const client = new Anthropic({ apiKey });
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
