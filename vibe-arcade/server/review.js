@@ -1,15 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { log } from './logger.js';
+import { log, addLogUpdate } from './logger.js';
 
 export async function reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore) {
   const client = new Anthropic({ apiKey });
   const startTime = Date.now();
 
-  log({
-    type: 'review', genre, theme, modifier, status: 'generating',
-    message: `Reviewing game: ${genre} + ${theme} (score: ${npcScore})`,
+  const logEntry = {
+    type: 'review', genre: genre || 'unknown', theme: theme || 'unknown', modifier, status: 'generating',
+    message: `Reviewing: ${genre} + ${theme} (score: ${npcScore})`,
     model: 'claude-haiku-4-5-20251001',
-  });
+    prompt: '', // will fill after building prompt
+    response: '',
+  };
+  log(logEntry);
 
   const codeToReview = gameCode.length > 12000 ? gameCode.slice(0, 12000) + '\n// ... (code continues)' : gameCode;
 
@@ -37,6 +40,8 @@ Review this game based on the code quality and the NPC score. Respond in JSON on
 
 A score of 0 might mean the NPC was bad at the game, not that the game is broken. Only mark isBroken if the CODE itself has clear errors.`;
 
+  addLogUpdate(logEntry.id, { prompt: prompt.slice(0, 2000), promptLength: prompt.length });
+
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
@@ -48,20 +53,20 @@ A score of 0 might mean the NPC was bad at the game, not that the game is broken
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON in response');
     const result = JSON.parse(jsonMatch[0]);
-    log({
-      type: 'review', genre, theme, modifier, status: 'done',
-      message: `Review done: ${genre} + ${theme} → ${result.rating}★ ${result.isBroken ? '(BROKEN)' : ''}`,
+    addLogUpdate(logEntry.id, {
+      status: 'done',
       duration: Date.now() - startTime,
       title: `${result.rating}★ — ${result.feedback}`,
+      response: text,
     });
     return result;
   } catch (e) {
     console.error('Failed to parse review:', text);
-    log({
-      type: 'review', genre, theme, modifier, status: 'error',
-      message: `Review parse failed: ${genre} + ${theme}`,
+    addLogUpdate(logEntry.id, {
+      status: 'error',
       duration: Date.now() - startTime,
       error: e.message,
+      response: text,
     });
     return { rating: 3, isBroken: false, feedback: 'Review failed to parse', suggestions: [] };
   }
