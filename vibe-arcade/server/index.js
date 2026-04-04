@@ -273,12 +273,21 @@ function selectLog(id) {
   }
 }
 
+var lastSelectedHash = '';
 async function refresh() {
   try {
     var response = await fetch('/api/logs');
     var logs = await response.json();
     renderList(logs);
-    if (selectedId !== null) selectLog(selectedId);
+    // Only rebuild detail if selected log changed (status/duration/response updated)
+    if (selectedId !== null) {
+      var log = allLogs.find(function(l) { return l.id === selectedId; });
+      var hash = log ? (log.status + '|' + log.duration + '|' + (log.response||'').length) : '';
+      if (hash !== lastSelectedHash) {
+        lastSelectedHash = hash;
+        selectLog(selectedId);
+      }
+    }
   } catch (e) {}
 }
 refresh();
