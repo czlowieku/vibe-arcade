@@ -21,6 +21,7 @@ export class NpcGameRunner {
     this._scoreCallback = null;
     this._gameOverCallback = null;
     this._pressedKeys = new Set();
+    this.crashCount = 0;
   }
 
   start(gameCode, skill, onScore, onGameOver) {
@@ -28,6 +29,7 @@ export class NpcGameRunner {
     this.skill = skill;
     this.score = 0;
     this.gameOver = false;
+    this.crashCount = 0;
     this.inputTimer = 0;
     this._scoreCallback = onScore;
     this._gameOverCallback = onGameOver;
@@ -62,6 +64,9 @@ export class NpcGameRunner {
       if (this._gameOverCallback) this._gameOverCallback(finalScore || this.score);
     };
 
+    const crashFnName = `__vibe_npc_onCrash_${this.runnerId}`;
+    window[crashFnName] = () => { this.crashCount++; };
+
     const wrappedCode = `
       try {
         ${gameCode}
@@ -72,6 +77,7 @@ export class NpcGameRunner {
         );
       } catch(err) {
         console.error('NPC game error:', err);
+        window['${crashFnName}']();
         window['${gameOverFnName}'](0);
       }
     `;
@@ -197,6 +203,7 @@ export class NpcGameRunner {
     if (this.runnerId) {
       delete window[`__vibe_npc_onScore_${this.runnerId}`];
       delete window[`__vibe_npc_onGameOver_${this.runnerId}`];
+      delete window[`__vibe_npc_onCrash_${this.runnerId}`];
     }
 
     this.canvas = null;

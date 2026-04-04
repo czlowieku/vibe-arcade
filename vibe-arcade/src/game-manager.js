@@ -71,6 +71,18 @@ export class GameManager {
               title: data.title,
               description: data.description,
               highScore: 0,
+              recipe: {
+                genre: genre.id,
+                theme: theme.id,
+                modifier: modifier?.id || null,
+                cardLevels: {
+                  genre: recipe.genre.stars,
+                  theme: recipe.theme.stars,
+                  modifier: recipe.modifier?.stars || 0,
+                },
+              },
+              suggestions: [],
+              brokenCount: 0,
             };
             this.saveCallback();
           } else if (data.type === 'error') {

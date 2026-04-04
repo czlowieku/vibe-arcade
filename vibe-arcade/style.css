@@ -1056,3 +1056,108 @@ body {
 #btn-kick-npc:hover {
   background: rgba(231,76,60,0.15) !important;
 }
+
+/* Suggestions Panel */
+#suggestions-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(245,240,230,0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  backdrop-filter: blur(8px);
+}
+
+#suggestions-panel-inner {
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+#suggestions-panel h2 {
+  color: #e67e22;
+  font-size: 22px;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+#suggestions-list {
+  text-align: left;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.suggestion-text {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.suggestion-apply {
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.suggestion-apply:hover {
+  box-shadow: 0 2px 10px rgba(230,126,34,0.4);
+}
+
+#btn-close-suggestions {
+  margin-top: 16px;
+  padding: 10px 32px;
+  background: #e8e4dc;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-suggestions {
+  border-color: #e67e22 !important;
+  color: #e67e22 !important;
+}
+
+#btn-suggestions:hover {
+  background: rgba(230,126,34,0.1) !important;
+}
+
+/* Card drag feedback */
+body.dragging-card .card {
+  opacity: 0.6;
+}
+
+body.dragging-card #arcade-canvas {
+  outline: 3px dashed rgba(230,126,34,0.4);
+  outline-offset: -3px;
+}
+
+[draggable="true"] {
+  cursor: grab;
+}
+
+[draggable="true"]:active {
+  cursor: grabbing;
+}

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { NPC, STATES } from './npc.js';
 import { NpcGameRunner } from './npc-game-runner.js';
+import { getApiKey } from './storage.js';
 
 const COMMENTARY_GOOD = [
   'NAKURWIAM!!!',
@@ -354,6 +355,7 @@ export class NpcManager {
     if (npc.gameRunner) {
       hadRunner = true;
       gameScore = npc.gameRunner.score;
+      npc._crashCount = npc.gameRunner.crashCount || 0;
       npc.gameRunner.stop();
       npc.gameRunner = null;
     }
@@ -399,6 +401,62 @@ export class NpcManager {
     }
     this.save();
 
+    // Fire-and-forget async AI review
+    if (hadRunner && machine.gameCode) {
+      this._callReview(machine, gameScore, npc._crashCount || 0).then(review => {
+        if (!review) return;
+
+        // Blend rating: 40% score, 60% AI
+        const blended = Math.round(0.4 * rating + 0.6 * review.rating);
+        const finalRating = Math.max(1, Math.min(5, blended));
+
+        // Update reputation with blended (replaces the immediate one)
+        this.reputation.addRating(machine.index, finalRating);
+
+        // Store suggestions
+        if (review.suggestions && review.suggestions.length > 0) {
+          if (!machine.suggestions) machine.suggestions = [];
+          for (const s of review.suggestions) {
+            if (!machine.suggestions.includes(s)) machine.suggestions.push(s);
+          }
+          if (machine.suggestions.length > 5) machine.suggestions = machine.suggestions.slice(-5);
+          const saved = this.gameState.machines[machine.index];
+          if (saved) {
+            saved.suggestions = machine.suggestions;
+            this.save();
+          }
+        }
+
+        // Track broken games
+        if (review.isBroken || (npc._crashCount || 0) > 0) {
+          machine.brokenCount = (machine.brokenCount || 0) + 1;
+          const saved = this.gameState.machines[machine.index];
+          if (saved) saved.brokenCount = machine.brokenCount;
+          this.save();
+
+          if (machine.brokenCount >= 2 && saved?.recipe) {
+            console.log(`Auto-regenerating broken game on machine ${machine.index}`);
+            machine.brokenCount = 0;
+            if (saved) saved.brokenCount = 0;
+            this.save();
+            this._autoRegenerate(machine, saved.recipe, review.feedback);
+          }
+        }
+
+        // Update history with AI feedback
+        if (this.gameState.npcHistory) {
+          const lastEntry = [...this.gameState.npcHistory].reverse().find(
+            e => e.machineIndex === machine.index
+          );
+          if (lastEntry) {
+            lastEntry.rating = finalRating;
+            lastEntry.aiFeedback = review.feedback;
+            this.save();
+          }
+        }
+      });
+    }
+
     if (rating >= 5) npc.showEmoticon('🤩');
     else if (rating >= 4) npc.showEmoticon('⭐');
     else if (rating >= 3) npc.showEmoticon('👍');
@@ -426,6 +484,88 @@ export class NpcManager {
     const standardsModifier = (standards - 0.5) * 0.8;
     const finalRating = baseRating - standardsModifier;
     return Math.max(1, Math.min(5, Math.round(finalRating)));
+  }
+
+  async _callReview(machine, gameScore, crashCount) {
+    const apiKey = getApiKey();
+    if (!apiKey || !machine.gameCode) return null;
+
+    const saved = this.gameState.machines[machine.index];
+    try {
+      const resp = await fetch('/api/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey,
+          gameCode: machine.gameCode,
+          genre: saved?.recipe?.genre || 'unknown',
+          theme: saved?.recipe?.theme || 'unknown',
+          modifier: saved?.recipe?.modifier || null,
+          npcScore: gameScore,
+        }),
+      });
+      if (!resp.ok) return null;
+      return await resp.json();
+    } catch (e) {
+      console.error('Review API error:', e);
+      return null;
+    }
+  }
+
+  _autoRegenerate(machine, recipe, feedback) {
+    const apiKey = getApiKey();
+    if (!apiKey) return;
+
+    const extraInstructions = `CRITICAL: The previous version of this game was broken/unplayable. Issue: ${feedback || 'game crashes or freezes'}. Generate a WORKING version. Test your logic carefully.`;
+
+    machine.state = 'generating';
+    machine.streamedCode = '';
+
+    fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        genre: recipe.genre,
+        theme: recipe.theme,
+        modifier: recipe.modifier,
+        cardLevels: recipe.cardLevels || { genre: 1, theme: 1, modifier: 0 },
+        extraInstructions,
+        apiKey,
+      }),
+    }).then(async response => {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = JSON.parse(line.slice(6));
+          if (data.type === 'done') {
+            machine.setGame(data.gameCode, data.title, data.description);
+            const saved = this.gameState.machines[machine.index];
+            if (saved) {
+              saved.gameCode = data.gameCode;
+              saved.title = data.title;
+              saved.description = data.description;
+              saved.brokenCount = 0;
+              saved.suggestions = [];
+            }
+            machine.suggestions = [];
+            machine.brokenCount = 0;
+            this.save();
+          }
+        }
+      }
+    }).catch(err => {
+      console.error('Auto-regen failed:', err);
+      machine.state = 'ready';
+      machine.drawReady();
+    });
   }
 
   _showCommentary(npc) {

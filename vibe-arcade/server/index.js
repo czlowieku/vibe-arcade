@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { generateGameStream } from './generate.js';
 import { generatePinballConfig } from './generate-pinball.js';
 import { getLogs } from './logger.js';
+import { reviewGame } from './review.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -56,6 +57,20 @@ app.post('/api/generate-pinball', async (req, res) => {
     } else {
       res.status(500).json({ error: err.message });
     }
+  }
+});
+
+app.post('/api/review', async (req, res) => {
+  const { apiKey, gameCode, genre, theme, modifier, npcScore } = req.body;
+  if (!apiKey || !gameCode) {
+    return res.status(400).json({ error: 'apiKey and gameCode required' });
+  }
+  try {
+    const review = await reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore);
+    res.json(review);
+  } catch (err) {
+    console.error('Review failed:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

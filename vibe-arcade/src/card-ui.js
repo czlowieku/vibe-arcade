@@ -173,6 +173,17 @@ export class CardUI {
       const card = getCardById(pc.cardId);
       if (!card) continue;
       const el = this._createCardElement(card, pc, 'small');
+      el.draggable = true;
+      el.dataset.cardId = pc.cardId;
+      el.dataset.stars = pc.stars;
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ cardId: pc.cardId, stars: pc.stars }));
+        e.dataTransfer.effectAllowed = 'copy';
+        document.body.classList.add('dragging-card');
+      });
+      el.addEventListener('dragend', () => {
+        document.body.classList.remove('dragging-card');
+      });
       this.cardBarCards.appendChild(el);
     }
     this.cardBar.classList.remove('hidden');

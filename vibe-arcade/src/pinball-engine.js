@@ -78,6 +78,8 @@ export class PinballEngine {
     // Create group and tilt the table
     this.group = new THREE.Group();
     this.group.rotation.x = 0.105; // 6-degree tilt
+    // Scale engine geometry to match the natively-sized table (1.4 wide, 2.4 long)
+    this.group.scale.set(2, 2, 2);
     this.parentGroup.add(this.group);
 
     this._initPhysics();

@@ -218,6 +218,9 @@ for (let i = 0; i < gameState.machines.length; i++) {
     machine.gameCode = saved.gameCode;
     machine.gameTitle = saved.title;
     machine.highScore = saved.highScore || 0;
+    machine.suggestions = saved.suggestions || [];
+    machine.brokenCount = saved.brokenCount || 0;
+    machine.recipe = saved.recipe || null;
     machine.drawReady();
   }
 }
@@ -257,6 +260,7 @@ hud.onBackToArcade = () => {
   cameraCtrl.zoomOut();
   activeMachine = null;
   hud.hideBackButton();
+  document.getElementById('btn-suggestions').classList.add('hidden');
   cardUI.showCardBar();
   hud.updateDisplay();
 };
@@ -272,6 +276,7 @@ hud.onBack = () => {
   activeMachine = null;
   hud.hideBackButton();
   hud.hideKickButton();
+  document.getElementById('btn-suggestions').classList.add('hidden');
   cardUI.showCardBar();
 };
 
@@ -293,6 +298,7 @@ hud.onNewGame = () => {
     cameraCtrl.zoomOut();
     hud.hideBackButton();
     hud.hideGameOver();
+    document.getElementById('btn-suggestions').classList.add('hidden');
 
     // Slight delay so camera starts zooming, then open panel
     setTimeout(() => {
@@ -387,10 +393,11 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
         } else if (data.type === 'done') {
           machine.setGame(data.gameCode, data.title, data.description);
           gameState.machines[machine.index] = {
+            ...gameState.machines[machine.index],
             gameCode: data.gameCode,
             title: data.title,
             description: data.description,
-            highScore: machine.highScore || 0,
+            brokenCount: 0,
           };
           save();
         }
@@ -407,6 +414,43 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
 
 document.getElementById('btn-modify-cancel').addEventListener('click', () => {
   document.getElementById('modify-panel').classList.add('hidden');
+});
+
+// Suggestions panel
+document.getElementById('btn-suggestions').addEventListener('click', () => {
+  const machine = activeMachine || cameraCtrl.zoomedMachine;
+  if (!machine || !machine.suggestions || machine.suggestions.length === 0) return;
+
+  const listEl = document.getElementById('suggestions-list');
+  listEl.replaceChildren();
+
+  for (const suggestion of machine.suggestions) {
+    const item = document.createElement('div');
+    item.className = 'suggestion-item';
+
+    const text = document.createElement('div');
+    text.className = 'suggestion-text';
+    text.textContent = suggestion;
+
+    const btn = document.createElement('button');
+    btn.className = 'suggestion-apply';
+    btn.textContent = 'APPLY';
+    btn.addEventListener('click', () => {
+      document.getElementById('suggestions-panel').classList.add('hidden');
+      document.getElementById('modify-instructions').value = suggestion;
+      document.getElementById('btn-do-modify').click();
+    });
+
+    item.appendChild(text);
+    item.appendChild(btn);
+    listEl.appendChild(item);
+  }
+
+  document.getElementById('suggestions-panel').classList.remove('hidden');
+});
+
+document.getElementById('btn-close-suggestions').addEventListener('click', () => {
+  document.getElementById('suggestions-panel').classList.add('hidden');
 });
 
 // Show card bar on start
@@ -536,6 +580,10 @@ canvas.addEventListener('click', (event) => {
         cameraCtrl.zoomTo(machine);
         cardUI.hideCardBar();
         hud.showBackButton();
+        if (machine.suggestions && machine.suggestions.length > 0) {
+          document.getElementById('btn-suggestions').classList.remove('hidden');
+          document.getElementById('btn-suggestions').textContent = `💡 SUGGESTIONS (${machine.suggestions.length})`;
+        }
       } else if (machine.state === 'generating') {
         activeMachine = machine;
         cameraCtrl.zoomTo(machine);
@@ -554,6 +602,68 @@ canvas.addEventListener('click', (event) => {
       }
     }
   }
+});
+
+// Card drag & drop onto machines
+canvas.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(clickableMeshes);
+
+  let dropTarget = null;
+  if (intersects.length > 0) {
+    dropTarget = intersects[0].object.userData.machine || null;
+  }
+
+  for (const m of arcadeRoom.machines) {
+    if (m === dropTarget && m.gameCode) m.highlight();
+    else m.unhighlight();
+  }
+});
+
+canvas.addEventListener('drop', (e) => {
+  e.preventDefault();
+  document.body.classList.remove('dragging-card');
+
+  for (const m of arcadeRoom.machines) m.unhighlight();
+
+  const data = e.dataTransfer.getData('text/plain');
+  if (!data) return;
+
+  let cardData;
+  try { cardData = JSON.parse(data); } catch { return; }
+  const card = getCardById(cardData.cardId);
+  if (!card) return;
+
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(clickableMeshes);
+  if (intersects.length === 0) return;
+
+  const machine = intersects[0].object.userData.machine;
+  if (!machine || !machine.gameCode) return;
+
+  let instruction;
+  if (card.category === 'modifier') {
+    instruction = `Add this modifier to the game: ${card.name} — ${card.desc}. Integrate it naturally into the existing gameplay.`;
+  } else if (card.category === 'theme') {
+    instruction = `Retheme this game with: ${card.name} — ${card.desc}. Change all visuals to match this new theme while keeping gameplay intact.`;
+  } else if (card.category === 'genre') {
+    instruction = `Blend in elements of this genre: ${card.name} — ${card.desc}. Add genre-specific mechanics while keeping the core game working.`;
+  }
+
+  activeMachine = machine;
+  document.getElementById('modify-instructions').value = instruction;
+  document.getElementById('btn-do-modify').click();
+});
+
+canvas.addEventListener('dragleave', () => {
+  for (const m of arcadeRoom.machines) m.unhighlight();
 });
 
 function startPlaying(machine) {
@@ -582,6 +692,7 @@ document.addEventListener('keydown', (e) => {
       activeMachine = null;
       hud.hideBackButton();
       hud.hideGameOver();
+      document.getElementById('btn-suggestions').classList.add('hidden');
       cardUI.showCardBar();
     }
     return;
