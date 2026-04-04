@@ -14,6 +14,8 @@ export class HUD {
     this.packCardsEl = document.getElementById('pack-cards');
     this.buyPackEl = document.getElementById('buy-pack');
     this.backButtonEl = document.getElementById('back-button');
+    this.reputationEl = document.getElementById('reputation-value');
+    this.visitorsEl = document.getElementById('visitors-value');
 
     this.onPlayAgain = null;
     this.onBackToArcade = null;
@@ -153,6 +155,15 @@ export class HUD {
 
   hideBackButton() {
     this.backButtonEl.classList.add('hidden');
+  }
+
+  updateNpcDisplay(reputation, visitorCount) {
+    if (this.reputationEl) {
+      this.reputationEl.textContent = reputation > 0 ? reputation.toFixed(1) : '-';
+    }
+    if (this.visitorsEl) {
+      this.visitorsEl.textContent = visitorCount;
+    }
   }
 
   buyPack() {
