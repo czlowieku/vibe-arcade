@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateGameStream } from './generate.js';
+import { generatePinballConfig } from './generate-pinball.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -34,6 +35,25 @@ app.post('/api/generate', async (req, res) => {
       res.end();
     } else {
       res.status(500).json({ error: 'Failed to generate game: ' + err.message });
+    }
+  }
+});
+
+app.post('/api/generate-pinball', async (req, res) => {
+  const { genre, theme, modifier, cardLevels, extraInstructions } = req.body;
+  if (!genre || !theme) {
+    return res.status(400).json({ error: 'genre and theme are required' });
+  }
+  try {
+    console.log(`Generating pinball: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}`);
+    await generatePinballConfig(genre, theme, modifier, cardLevels || {}, extraInstructions || '', res);
+  } catch (err) {
+    console.error('Pinball generation failed:', err.message);
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+      res.end();
+    } else {
+      res.status(500).json({ error: err.message });
     }
   }
 });
