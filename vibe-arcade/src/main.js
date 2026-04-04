@@ -179,32 +179,41 @@ function showMachineCards(machine) {
   if (!saved?.recipe) { container.classList.add('hidden'); return; }
 
   const { genre, theme, modifier } = saved.recipe;
-  if (genre) {
-    const card = getCardById(genre);
-    if (card) {
-      const tag = document.createElement('span');
-      tag.className = 'machine-card-tag genre';
-      tag.textContent = `${card.icon} ${card.name}`;
-      container.appendChild(tag);
-    }
-  }
-  if (theme) {
-    const card = getCardById(theme);
-    if (card) {
-      const tag = document.createElement('span');
-      tag.className = 'machine-card-tag theme';
-      tag.textContent = `${card.icon} ${card.name}`;
-      container.appendChild(tag);
-    }
-  }
-  if (modifier) {
-    const card = getCardById(modifier);
-    if (card) {
-      const tag = document.createElement('span');
-      tag.className = 'machine-card-tag modifier';
-      tag.textContent = `${card.icon} ${card.name}`;
-      container.appendChild(tag);
-    }
+  const cardLevels = saved.recipe.cardLevels || {};
+
+  for (const [id, category, stars] of [
+    [genre, 'genre', cardLevels.genre || 1],
+    [theme, 'theme', cardLevels.theme || 1],
+    [modifier, 'modifier', cardLevels.modifier || 1],
+  ]) {
+    if (!id) continue;
+    const card = getCardById(id);
+    if (!card) continue;
+
+    const el = document.createElement('div');
+    el.className = `card ${card.category}`;
+    el.style.width = '60px';
+    el.style.height = '80px';
+
+    const starsEl = document.createElement('div');
+    starsEl.className = 'card-stars';
+    starsEl.style.fontSize = '7px';
+    starsEl.textContent = '★'.repeat(stars);
+
+    const icon = document.createElement('div');
+    icon.className = 'card-icon';
+    icon.style.fontSize = '18px';
+    icon.textContent = card.icon;
+
+    const name = document.createElement('div');
+    name.className = 'card-name';
+    name.style.fontSize = '8px';
+    name.textContent = card.name;
+
+    el.appendChild(starsEl);
+    el.appendChild(icon);
+    el.appendChild(name);
+    container.appendChild(el);
   }
   container.classList.remove('hidden');
 }
@@ -260,18 +269,14 @@ hud.onNewGame = () => {
   }
   const machine = activeMachine || cameraCtrl.zoomedMachine;
   if (machine) {
-    cameraCtrl.zoomOut();
-    hud.hideBackButton();
     hud.hideGameOver();
     hideMachineCards();
     document.getElementById('btn-suggestions').classList.add('hidden');
 
-    // Open card panel — old game remains on machine until new one finishes
-    setTimeout(() => {
-      activeMachine = machine;
-      cardUI.hideCardBar();
-      cardUI.show();
-    }, 100);
+    // Open card panel as overlay — stay zoomed, old game remains
+    activeMachine = machine;
+    cardUI.hideCardBar();
+    cardUI.show();
   }
 };
 
