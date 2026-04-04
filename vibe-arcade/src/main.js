@@ -388,14 +388,18 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
   machine.state = 'generating';
   machine.streamedCode = '';
 
+  const modGenre = saved?.recipe?.genre || 'custom';
+  const modTheme = saved?.recipe?.theme || 'custom';
+  const modModifier = saved?.recipe?.modifier || null;
+
   fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      genre: 'custom',
-      theme: 'custom',
-      modifier: null,
-      cardLevels: { genre: 1, theme: 1, modifier: 0 },
+      genre: modGenre,
+      theme: modTheme,
+      modifier: modModifier,
+      cardLevels: saved?.recipe?.cardLevels || { genre: 1, theme: 1, modifier: 0 },
       extraInstructions: extraContext,
       apiKey: getApiKey(),
     }),
@@ -416,7 +420,7 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
           machine.streamedCode += data.text;
           gameManager._drawStreamingScreen(machine, machine.streamedCode);
         } else if (data.type === 'done') {
-          machine.setGame(data.gameCode, data.title, data.description);
+          machine.setGame(data.gameCode, data.title || machine.gameTitle, data.description);
           gameState.machines[machine.index] = {
             ...gameState.machines[machine.index],
             gameCode: data.gameCode,

@@ -389,7 +389,7 @@ export class NpcManager {
     this.save();
 
     // Record to history
-    const genre = saved?.genre || 'platformer';
+    const genre = saved?.genre || saved?.recipe?.genre || 'platformer';
     const historyEntry = {
       npcName: npc.name || 'NPC',
       gameTitle: machine.gameTitle || 'Unknown',
@@ -399,6 +399,7 @@ export class NpcManager {
       rating: rating,
       skill: npc.getSkillForGenre ? npc.getSkillForGenre(genre) : 5,
       timestamp: Date.now(),
+      aiSuggestions: machine.suggestions && machine.suggestions.length > 0 ? [...machine.suggestions] : [],
     };
     if (!this.gameState.npcHistory) this.gameState.npcHistory = [];
     this.gameState.npcHistory.push(historyEntry);
