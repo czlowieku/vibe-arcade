@@ -55,8 +55,7 @@ export class NPC {
   }
 
   _generateSkills() {
-    const genres = ['platformer', 'shooter', 'puzzle', 'runner', 'dodge',
-      'pinball-classic', 'pinball-roguelike', 'pinball-hyper', 'pinball-multiball'];
+    const genres = ['platformer', 'shooter', 'puzzle', 'runner', 'dodge'];
     const skills = {};
     for (const g of genres) {
       // Gaussian-ish: center 5, most 3-7, rare 1-2 or 9-10

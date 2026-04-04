@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateGameStream } from './generate.js';
-import { generatePinballConfig } from './generate-pinball.js';
 import { getLogs } from './logger.js';
 import { reviewGame } from './review.js';
 
@@ -41,24 +40,6 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-app.post('/api/generate-pinball', async (req, res) => {
-  const { genre, theme, modifier, cardLevels, extraInstructions, apiKey } = req.body;
-  if (!genre || !theme) {
-    return res.status(400).json({ error: 'genre and theme are required' });
-  }
-  try {
-    console.log(`Generating pinball: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}`);
-    await generatePinballConfig(genre, theme, modifier, cardLevels || {}, extraInstructions || '', apiKey, res);
-  } catch (err) {
-    console.error('Pinball generation failed:', err.message);
-    if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
-      res.end();
-    } else {
-      res.status(500).json({ error: err.message });
-    }
-  }
-});
 
 app.post('/api/review', async (req, res) => {
   const { apiKey, gameCode, genre, theme, modifier, npcScore } = req.body;

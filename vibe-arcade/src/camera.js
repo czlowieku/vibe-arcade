@@ -209,24 +209,16 @@ export class CameraController {
     this.zoomedMachine = machine;
     this.isTransitioning = true;
 
-    // Position camera based on target type
-    const targetPos = new THREE.Vector3();
-    if (machine.screenMesh) {
-      // Arcade machine — look at screen from front
-      machine.screenMesh.getWorldPosition(targetPos);
-      const forward = new THREE.Vector3(0, 0, 1);
-      forward.applyQuaternion(machine.group.quaternion);
-      this.targetPosition.copy(targetPos).add(forward.multiplyScalar(2.5));
-      this.targetPosition.y = targetPos.y;
-      this.targetLookAt.copy(targetPos);
-    } else {
-      // Pinball table — top-down angled view for playing
-      machine.group.getWorldPosition(targetPos);
-      targetPos.y += 0.85; // playfield height
-      this.targetLookAt.copy(targetPos);
-      // Camera above and slightly in front — good angled view of playfield
-      this.targetPosition.set(targetPos.x, targetPos.y + 2.0, targetPos.z + 1.0);
-    }
+    // Position camera directly in front of the machine screen
+    const screenPos = new THREE.Vector3();
+    machine.screenMesh.getWorldPosition(screenPos);
+
+    // Get machine forward direction and place camera 2.5 units in front
+    const forward = new THREE.Vector3(0, 0, 1);
+    forward.applyQuaternion(machine.group.quaternion);
+    this.targetPosition.copy(screenPos).add(forward.multiplyScalar(2.5));
+    this.targetPosition.y = screenPos.y;
+    this.targetLookAt.copy(screenPos);
   }
 
   zoomOut() {

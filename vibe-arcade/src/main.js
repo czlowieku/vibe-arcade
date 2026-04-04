@@ -9,7 +9,6 @@ import { NpcManager } from './npc-manager.js';
 import { loadState, saveState, getApiKey } from './storage.js';
 import { getStarterPack, getCardById, CARDS } from './card-system.js';
 import { Exterior } from './exterior.js';
-import { PinballTable } from './pinball-table.js';
 
 // --- Prompt Panel ---
 let pendingRecipe = null;
@@ -20,10 +19,6 @@ const GENRE_DESC = {
   puzzle: 'puzzle game — matching, sorting, or pattern logic',
   runner: 'endless runner — auto-move forward, dodge obstacles',
   dodge: 'dodge game — avoid falling/flying obstacles, survive',
-  'pinball-classic': 'classic pinball — 3 balls, bumpers, ramps, standard scoring',
-  'pinball-roguelike': 'roguelike pinball — layout randomizes on ball loss, difficulty scales',
-  'pinball-hyper': 'hyper pinball — 2x gravity, 3x scoring, extremely fast ball',
-  'pinball-multiball': 'multiball pinball — starts with 2 balls, new ball every 30s, max 5',
 };
 const THEME_DESC = {
   neon: 'neon cyberpunk — glowing outlines, dark bg, cyan/magenta/yellow',
@@ -82,72 +77,9 @@ function showPromptPanel(recipe) {
 }
 
 document.getElementById('btn-start-coding').addEventListener('click', () => {
-  console.log('[pinball-debug] START CODING clicked', { activeMachine: !!activeMachine, pendingRecipe: !!pendingRecipe });
   if (!activeMachine || !pendingRecipe) return;
   const extra = document.getElementById('prompt-extra').value.trim();
   document.getElementById('prompt-panel').classList.add('hidden');
-
-  const genreCard = getCardById(pendingRecipe.genre.cardId);
-  const isPinball = genreCard && genreCard.id.startsWith('pinball-');
-  console.log('[pinball-debug] genre:', genreCard?.id, 'isPinball:', isPinball, 'hasBuildFromConfig:', !!activeMachine?.buildFromConfig, 'apiKey:', !!getApiKey());
-
-  if (isPinball && activeMachine && activeMachine.buildFromConfig) {
-    // Pinball generation flow — capture reference before async
-    const pinballRef = activeMachine;
-    console.log('[pinball-debug] Starting pinball generation...');
-    pinballRef.state = 'generating';
-
-    const themeCard = getCardById(pendingRecipe.theme.cardId);
-    const modifierCard = pendingRecipe.modifier ? getCardById(pendingRecipe.modifier.cardId) : null;
-
-    fetch('/api/generate-pinball', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        genre: genreCard.id,
-        theme: themeCard.id,
-        modifier: modifierCard ? modifierCard.id : null,
-        cardLevels: {
-          genre: pendingRecipe.genre.stars,
-          theme: pendingRecipe.theme.stars,
-          modifier: pendingRecipe.modifier ? pendingRecipe.modifier.stars : 0,
-        },
-        apiKey: getApiKey(),
-      }),
-    }).then(async response => {
-      console.log('[pinball-debug] fetch response status:', response.status);
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = JSON.parse(line.slice(6));
-          console.log('[pinball-debug] SSE data:', data.type, data.type === 'done' ? data.config?.tableName : '');
-          if (data.type === 'done') {
-            pinballRef.buildFromConfig(data.config);
-            console.log('[pinball-debug] Config applied! State:', pinballRef.state);
-          } else if (data.type === 'error') {
-            console.error('[pinball-debug] Server error:', data.message);
-            pinballRef.state = 'empty';
-          }
-        }
-      }
-    }).catch(err => {
-      console.error('Pinball generation failed:', err);
-      pinballRef.state = 'empty';
-    });
-
-    cameraCtrl.zoomTo(activeMachine);
-    hud.showBackButton();
-    pendingRecipe = null;
-    return;
-  }
 
   gameManager.generateGame(activeMachine, pendingRecipe, extra);
   cameraCtrl.zoomTo(activeMachine);
@@ -167,13 +99,6 @@ const gameState = loadState();
 if (gameState.cards.length === 0) {
   gameState.cards = getStarterPack();
   gameState.coins = 50; // Starting coins
-  saveState(gameState);
-}
-
-// Ensure player has at least one pinball card
-const hasPinball = gameState.cards.some(c => c.cardId.startsWith('pinball-'));
-if (!hasPinball) {
-  gameState.cards.push({ cardId: 'pinball-classic', stars: 1 });
   saveState(gameState);
 }
 
@@ -480,10 +405,6 @@ canvas.addEventListener('mousemove', (event) => {
   let newHovered = null;
   if (intersects.length > 0) {
     newHovered = intersects[0].object.userData.machine || null;
-    // Also check for pinball table
-    if (!newHovered && intersects[0].object.userData.pinball) {
-      newHovered = intersects[0].object.userData.pinball;
-    }
   }
 
   if (newHovered !== hoveredMachine) {
@@ -519,49 +440,6 @@ canvas.addEventListener('click', (event) => {
   const intersects = raycaster.intersectObjects(clickableMeshes);
 
   if (intersects.length > 0) {
-    // Check for pinball table click
-    const pinball = intersects[0].object.userData.pinball;
-    if (pinball && cameraCtrl.isIso()) {
-      // Must be highlighted first (same as arcade machines)
-      if (pinball !== hoveredMachine) return;
-
-      // Unhighlight
-      pinball.unhighlight();
-      hoveredMachine = null;
-      canvas.style.cursor = 'default';
-
-      console.log('[pinball] clicked, state:', pinball.state);
-
-      if (pinball.state === 'empty') {
-        // Open card panel for pinball
-        activeMachine = pinball;
-        cardUI.hideCardBar();
-        cardUI.show();
-      } else if (pinball.state === 'ready') {
-        // Start playing pinball
-        activeMachine = pinball;
-        cameraCtrl.zoomTo(pinball);
-        cardUI.hideCardBar();
-        hud.showBackButton();
-        pinball.startGame(
-          (pts) => { /* live score */ },
-          (score) => {
-            const coinsEarned = Math.floor(score / 10);
-            gameState.coins += coinsEarned;
-            save();
-            hud.showGameOver(score, coinsEarned);
-          }
-        );
-      } else if (pinball.state === 'occupied_npc') {
-        activeMachine = pinball;
-        cameraCtrl.zoomTo(pinball);
-        cardUI.hideCardBar();
-        hud.showBackButton();
-        hud.showKickButton();
-      }
-      return; // Don't process as arcade machine
-    }
-
     const machine = intersects[0].object.userData.machine;
     if (!machine) return;
 
@@ -739,7 +617,6 @@ function animate() {
   cameraCtrl.update();
   gameManager.updateMachineTexture();
   npcManager.update(dt);
-  if (arcadeRoom.pinballTable) arcadeRoom.pinballTable.update(dt);
   hud.updateNpcDisplay(reputation.getReputation(), npcManager.getNpcCount());
 
   renderer.render(scene, camera);
