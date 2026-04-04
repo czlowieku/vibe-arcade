@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { NPC, STATES } from './npc.js';
-import { NpcGameRunner } from './npc-game-runner.js';
+// NpcGameRunner removed — NPC plays are visually simulated instead
 import { getApiKey } from './storage.js';
 
 const COMMENTARY_GOOD = [
@@ -202,15 +202,21 @@ export class NpcManager {
       case STATES.PLAYING:
         npc.stateTimer -= dt;
 
-        // Update NPC game runner (simulated input + frame capture)
-        if (npc.gameRunner && npc.gameRunner.running) {
-          npc.gameRunner.update(dt, npc.targetMachine);
+        // Simulate score growth based on skill
+        npc._simScoreTimer = (npc._simScoreTimer || 0) + dt;
+        if (npc._simScoreTimer > 0.5) {
+          npc._simScoreTimer = 0;
+          const skill = npc._simSkill || 5;
+          // Higher skill = more points per tick, with randomness
+          const baseGain = skill * 8;
+          const gain = Math.floor(baseGain + (Math.random() - 0.3) * baseGain);
+          npc._simScore = (npc._simScore || 0) + Math.max(0, gain);
+          npc._scoreRate = gain;
         }
 
-        // Check if game ended on its own (onGameOver fired)
-        if (npc.gameRunner && npc.gameRunner.gameOver) {
-          this._finishPlaying(npc);
-          break;
+        // Draw animated playing screen
+        if (npc.targetMachine) {
+          this._drawNpcPlayingAnimated(npc, npc.targetMachine);
         }
 
         // Commentary thought bubbles every 4-8 seconds
@@ -319,61 +325,29 @@ export class NpcManager {
       npc.group.rotation.y = Math.atan2(dir.x, dir.z);
     }
 
-    // If machine has game code, actually run the game
-    if (machine.gameCode) {
-      const runner = new NpcGameRunner();
-      npc.gameRunner = runner;
-      const saved = this.gameState.machines[machine.index];
-      const genre = saved?.genre || 'platformer';
-      const skillNorm = npc.getSkillNormalized(genre);
-      runner.start(
-        machine.gameCode,
-        skillNorm,
-        (points, totalScore) => {
-          // Track score rate for commentary
-          npc._scoreRate = totalScore - (npc._lastScore || 0);
-          npc._lastScore = totalScore;
-        },
-        (finalScore) => {
-          // Game ended on its own — will be picked up in update loop
-        }
-      );
-    } else {
-      // No game code — fallback to old static screen
-      npc.gameRunner = null;
-      this._drawNpcPlayingScreen(machine);
-    }
+    // Simulate playing — score grows based on skill, animated screen
+    npc.gameRunner = null;
+    const saved = this.gameState.machines[machine.index];
+    const genre = saved?.genre || 'platformer';
+    const skillLevel = npc.getSkillForGenre(genre);
+    npc._simScore = 0;
+    npc._simSkill = skillLevel;
+    npc._simScoreTimer = 0;
   }
 
   _finishPlaying(npc) {
     const machine = npc.targetMachine;
     if (!machine) { this._startLeaving(npc); return; }
 
-    // Stop the game runner and clean up
-    let gameScore = 0;
-    let hadRunner = false;
-    if (npc.gameRunner) {
-      hadRunner = true;
-      gameScore = npc.gameRunner.score;
-      npc._crashCount = npc.gameRunner.crashCount || 0;
-      npc.gameRunner.stop();
-      npc.gameRunner = null;
-    }
+    // Use simulated score
+    const gameScore = npc._simScore || 0;
 
     machine.npcOccupant = null;
     machine.state = 'ready';
     machine.drawReady();
 
     const saved = this.gameState.machines[machine.index];
-    let rating;
-    if (hadRunner) {
-      // Score-based rating
-      rating = this._scoreToRating(gameScore, npc.personality.standards);
-    } else {
-      // Fallback: old random rating
-      const avgStars = saved ? ((saved.cardStars?.genre || 1) + (saved.cardStars?.theme || 1)) / 2 : 1;
-      rating = this.reputation.calculateRating(npc.personality.standards, avgStars);
-    }
+    const rating = this._scoreToRating(gameScore, npc.personality.standards);
     npc.rating = rating;
 
     this.reputation.addRating(machine.index, rating);
@@ -384,6 +358,7 @@ export class NpcManager {
     this.save();
 
     // Record to history
+    const genre = saved?.genre || 'platformer';
     const historyEntry = {
       npcName: npc.name || 'NPC',
       gameTitle: machine.gameTitle || 'Unknown',
@@ -391,7 +366,7 @@ export class NpcManager {
       machineIndex: machine.index,
       score: gameScore,
       rating: rating,
-      skill: npc.getSkillForGenre ? npc.getSkillForGenre(saved?.genre || 'platformer') : 5,
+      skill: npc.getSkillForGenre ? npc.getSkillForGenre(genre) : 5,
       timestamp: Date.now(),
     };
     if (!this.gameState.npcHistory) this.gameState.npcHistory = [];
@@ -603,22 +578,75 @@ export class NpcManager {
   }
 
   _drawNpcPlayingScreen(machine) {
+    this._drawNpcPlayingAnimated(null, machine);
+  }
+
+  _drawNpcPlayingAnimated(npc, machine) {
     const ctx = machine.screenCtx;
-    ctx.fillStyle = '#111';
+    const t = Date.now() / 1000;
+    const score = npc ? (npc._simScore || 0) : 0;
+    const skill = npc ? (npc._simSkill || 5) : 5;
+    const name = npc ? (npc.name || 'NPC') : 'NPC';
+
+    // Dark background
+    ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, 800, 600);
-    ctx.fillStyle = 'rgba(255,255,255,0.02)';
-    for (let y = 0; y < 600; y += 3) {
-      ctx.fillRect(0, y, 800, 1);
-    }
+
+    // Scanlines
+    ctx.fillStyle = 'rgba(255,255,255,0.015)';
+    for (let y = 0; y < 600; y += 3) ctx.fillRect(0, y, 800, 1);
+
+    // Game title
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 36px Arial, sans-serif';
+    ctx.font = 'bold 28px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(machine.gameTitle || 'MINI GAME', 400, 180);
+    ctx.fillText(machine.gameTitle || 'MINI GAME', 400, 50);
+
+    // Animated "game" visualization — bouncing dots representing gameplay
+    ctx.save();
+    for (let i = 0; i < 6 + skill; i++) {
+      const x = 100 + ((i * 137 + t * (80 + skill * 15)) % 600);
+      const y = 150 + Math.sin(t * (2 + i * 0.5) + i * 1.7) * 100 + Math.cos(t * 1.3 + i) * 50;
+      const r = 4 + Math.sin(t * 3 + i) * 2;
+      const hue = (i * 40 + t * 30) % 360;
+      ctx.fillStyle = 'hsl(' + hue + ', 80%, 60%)';
+      ctx.beginPath();
+      ctx.arc(x, Math.max(120, Math.min(420, y)), r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // "Player" cursor controlled by NPC
+    const px = 400 + Math.sin(t * (1 + skill * 0.3)) * (150 + skill * 15);
+    const py = 350 + Math.cos(t * (0.8 + skill * 0.2)) * 60;
     ctx.fillStyle = '#4fc3f7';
-    ctx.font = '28px Arial, sans-serif';
-    ctx.fillText('NOW PLAYING', 400, 300);
-    ctx.font = '48px Arial';
-    ctx.fillText('🎮', 400, 400);
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(79,195,247,0.3)';
+    ctx.beginPath();
+    ctx.arc(px, py, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Score display
+    ctx.fillStyle = '#f1c40f';
+    ctx.font = 'bold 36px Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(score.toLocaleString(), 760, 50);
+
+    // Player name and skill
+    ctx.fillStyle = '#888';
+    ctx.font = '16px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(name + ' (skill ' + skill + '/10)', 40, 580);
+
+    // NOW PLAYING badge
+    ctx.fillStyle = 'rgba(79,195,247,0.15)';
+    ctx.fillRect(300, 460, 200, 36);
+    ctx.fillStyle = '#4fc3f7';
+    ctx.font = 'bold 18px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('NOW PLAYING', 400, 483);
+
     machine.screenTexture.needsUpdate = true;
   }
 
