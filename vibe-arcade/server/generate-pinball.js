@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { log, addLogUpdate } from './logger.js';
 
-const client = new Anthropic();
+// Client created per-request with apiKey from frontend
 
 function buildPinballPrompt(genre, theme, modifier, cardLevels, extraInstructions) {
   const themeGuides = {
@@ -100,7 +100,7 @@ OUTPUT SCHEMA (follow exactly):
 Return ONLY the JSON object. Nothing else.`;
 }
 
-export async function generatePinballConfig(genre, theme, modifier, cardLevels, extraInstructions, res) {
+export async function generatePinballConfig(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res) {
   const prompt = buildPinballPrompt(genre, theme, modifier, cardLevels, extraInstructions);
 
   const logEntry = { type: 'pinball', genre, theme, modifier, status: 'generating', message: `Generating pinball: ${genre} + ${theme}`, startTime: Date.now() };
@@ -115,6 +115,7 @@ export async function generatePinballConfig(genre, theme, modifier, cardLevels, 
   let fullResponse = '';
 
   try {
+    const client = new Anthropic({ apiKey });
     const stream = await client.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,

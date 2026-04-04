@@ -41,13 +41,13 @@ app.post('/api/generate', async (req, res) => {
 });
 
 app.post('/api/generate-pinball', async (req, res) => {
-  const { genre, theme, modifier, cardLevels, extraInstructions } = req.body;
+  const { genre, theme, modifier, cardLevels, extraInstructions, apiKey } = req.body;
   if (!genre || !theme) {
     return res.status(400).json({ error: 'genre and theme are required' });
   }
   try {
     console.log(`Generating pinball: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}`);
-    await generatePinballConfig(genre, theme, modifier, cardLevels || {}, extraInstructions || '', res);
+    await generatePinballConfig(genre, theme, modifier, cardLevels || {}, extraInstructions || '', apiKey, res);
   } catch (err) {
     console.error('Pinball generation failed:', err.message);
     if (res.headersSent) {

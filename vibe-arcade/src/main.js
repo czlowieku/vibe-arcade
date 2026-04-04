@@ -108,6 +108,7 @@ document.getElementById('btn-start-coding').addEventListener('click', () => {
           theme: pendingRecipe.theme.stars,
           modifier: pendingRecipe.modifier ? pendingRecipe.modifier.stars : 0,
         },
+        apiKey: getApiKey(),
       }),
     }).then(async response => {
       const reader = response.body.getReader();
