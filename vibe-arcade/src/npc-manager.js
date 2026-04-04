@@ -407,6 +407,7 @@ export class NpcManager {
     this.save();
 
     // Fire-and-forget async AI review
+    console.log(`[review] _finishPlaying done for machine ${machine.index}, gameCode: ${!!machine.gameCode}, apiKey: ${!!getApiKey()}`);
     if (machine.gameCode) {
       this._callReview(machine, gameScore, npc._crashCount || 0).then(review => {
         if (!review) return;
