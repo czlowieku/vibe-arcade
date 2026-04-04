@@ -258,8 +258,6 @@ hud.onKickNpc = () => {
     const npc = machine.npcOccupant;
     npc.showEmoticon('😤');
     machine.npcOccupant = null;
-    machine.state = 'ready';
-    machine.drawReady();
     if (npc.gameRunner) {
       npc.gameRunner.stop();
       npc.gameRunner = null;
@@ -271,6 +269,16 @@ hud.onKickNpc = () => {
       new THREE.Vector3(0, 0, 8),
     ];
     hud.hideKickButton();
+
+    // Start playing immediately after kicking NPC
+    if (machine.gameCode) {
+      machine.state = 'ready';
+      machine.drawReady();
+      startPlaying(machine);
+    } else {
+      machine.state = 'ready';
+      machine.drawReady();
+    }
     hud.updateDisplay();
   }
 };
