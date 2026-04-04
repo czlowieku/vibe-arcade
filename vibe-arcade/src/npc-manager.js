@@ -493,7 +493,9 @@ export class NpcManager {
 
   async _callReview(machine, gameScore, crashCount) {
     const apiKey = getApiKey();
-    if (!apiKey || !machine.gameCode) return null;
+    if (!apiKey) { console.warn('[review] No API key set — skipping review'); return null; }
+    if (!machine.gameCode) { console.warn('[review] No game code — skipping review'); return null; }
+    console.log(`[review] Reviewing machine ${machine.index}, score: ${gameScore}`);
 
     const saved = this.gameState.machines[machine.index];
     try {
@@ -509,8 +511,10 @@ export class NpcManager {
           npcScore: gameScore,
         }),
       });
-      if (!resp.ok) return null;
-      return await resp.json();
+      if (!resp.ok) { console.warn('[review] API returned', resp.status); return null; }
+      const result = await resp.json();
+      console.log('[review] Result:', result);
+      return result;
     } catch (e) {
       console.error('Review API error:', e);
       return null;
