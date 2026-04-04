@@ -379,7 +379,10 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
 
   // Get saved machine data to know the original recipe
   const saved = gameState.machines[machine.index];
-  const extraContext = `The existing game code is:\n${machine.gameCode}\n\nPlayer wants these modifications: ${instructions}\n\nRewrite the entire game with these changes applied. Keep the same startGame(canvas, onScore, onGameOver) API.`;
+  const suggestionsCtx = machine.suggestions && machine.suggestions.length > 0
+    ? `\n\nAI REVIEWER SUGGESTIONS (from NPC play-testing):\n${machine.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nIncorporate these suggestions where they don't conflict with the player's request.`
+    : '';
+  const extraContext = `The existing game code is:\n${machine.gameCode}\n\nPlayer wants these modifications: ${instructions}${suggestionsCtx}\n\nRewrite the entire game with these changes applied. Keep the same startGame(canvas, onScore, onGameOver) API.`;
 
   // Regenerate with the existing game as context
   machine.state = 'generating';
@@ -680,7 +683,10 @@ canvas.addEventListener('drop', (e) => {
   const recipeTheme = saved?.recipe?.theme || 'custom';
   const recipeModifier = saved?.recipe?.modifier || null;
 
-  const extraContext = `The existing game code is:\n${machine.gameCode}\n\nIMPORTANT MODIFICATION REQUEST: ${instruction}\n\nRewrite the ENTIRE game with these changes applied. The changes must be DRAMATIC and OBVIOUS. Keep the same startGame(canvas, onScore, onGameOver) API.`;
+  const dropSuggestionsCtx = machine.suggestions && machine.suggestions.length > 0
+    ? `\n\nAI REVIEWER SUGGESTIONS (from NPC play-testing):\n${machine.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nIncorporate these where they don't conflict with the modification.`
+    : '';
+  const extraContext = `The existing game code is:\n${machine.gameCode}\n\nIMPORTANT MODIFICATION REQUEST: ${instruction}${dropSuggestionsCtx}\n\nRewrite the ENTIRE game with these changes applied. The changes must be DRAMATIC and OBVIOUS. Keep the same startGame(canvas, onScore, onGameOver) API.`;
 
   activeMachine = machine;
   machine.state = 'generating';

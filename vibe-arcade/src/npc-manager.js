@@ -541,7 +541,10 @@ export class NpcManager {
     const apiKey = getApiKey();
     if (!apiKey) return;
 
-    const extraInstructions = `CRITICAL: The previous version of this game was broken/unplayable. Issue: ${feedback || 'game crashes or freezes'}. Generate a WORKING version. Test your logic carefully.`;
+    const suggestions = machine.suggestions && machine.suggestions.length > 0
+      ? `\n\nPLAYER/AI SUGGESTIONS for improvement:\n${machine.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nTry to incorporate these suggestions into the new version.`
+      : '';
+    const extraInstructions = `CRITICAL: The previous version of this game was broken/unplayable. Issue: ${feedback || 'game crashes or freezes'}. Generate a WORKING version. Test your logic carefully.${suggestions}`;
 
     machine.state = 'generating';
     machine.streamedCode = '';
