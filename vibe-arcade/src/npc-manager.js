@@ -407,18 +407,28 @@ export class NpcManager {
     }
     this.save();
 
-    // Fire-and-forget async AI review
-    console.log(`[review] _finishPlaying done for machine ${machine.index}, gameCode: ${!!machine.gameCode}, apiKey: ${!!getApiKey()}`);
-    if (machine.gameCode) {
-      this._callReview(machine, gameScore, npc._crashCount || 0).then(review => {
+    // --- Heuristic health tracking (no API calls) ---
+    const crashCount = npc._crashCount || 0;
+    if (!machine._healthStats) machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0 };
+    machine._healthStats.plays++;
+    machine._healthStats.totalScore += gameScore;
+    if (crashCount > 0) machine._healthStats.crashes++;
+    if (gameScore === 0) machine._healthStats.zeroScores++;
+
+    // Detect suspicious machine: 3+ plays with all zero scores or high crash rate
+    const stats = machine._healthStats;
+    const isSuspicious = stats.plays >= 3 && (
+      stats.zeroScores >= 3 ||
+      stats.crashes >= 2
+    );
+
+    if (isSuspicious && !machine._aiReviewed) {
+      // One-time AI review for suspicious machines
+      machine._aiReviewed = true;
+      console.log(`[review] Machine ${machine.index} is suspicious (${stats.zeroScores} zero scores, ${stats.crashes} crashes in ${stats.plays} plays) — requesting AI review`);
+
+      this._callReview(machine, gameScore, crashCount).then(review => {
         if (!review) return;
-
-        // Blend rating: 40% score, 60% AI
-        const blended = Math.round(0.4 * rating + 0.6 * review.rating);
-        const finalRating = Math.max(1, Math.min(5, blended));
-
-        // Update reputation with blended (replaces the immediate one)
-        this.reputation.addRating(machine.index, finalRating);
 
         // Store suggestions
         if (review.suggestions && review.suggestions.length > 0) {
@@ -428,56 +438,37 @@ export class NpcManager {
           }
           if (machine.suggestions.length > 5) machine.suggestions = machine.suggestions.slice(-5);
           const saved = this.gameState.machines[machine.index];
-          if (saved) {
-            saved.suggestions = machine.suggestions;
-            this.save();
-          }
+          if (saved) { saved.suggestions = machine.suggestions; this.save(); }
         }
 
-        // Track broken games
-        if (review.isBroken || (npc._crashCount || 0) > 0) {
-          machine.brokenCount = (machine.brokenCount || 0) + 1;
+        // If AI confirms broken, try to auto-regen (max 2 attempts)
+        if (review.isBroken) {
           machine.regenAttempts = machine.regenAttempts || 0;
           const saved = this.gameState.machines[machine.index];
-          if (saved) {
-            saved.brokenCount = machine.brokenCount;
-            saved.regenAttempts = machine.regenAttempts;
-          }
-          this.save();
 
-          if (machine.brokenCount >= 2 && saved?.recipe) {
-            if (machine.regenAttempts < 2) {
-              // Try to regenerate
-              machine.regenAttempts++;
-              machine.brokenCount = 0;
-              if (saved) {
-                saved.brokenCount = 0;
-                saved.regenAttempts = machine.regenAttempts;
-              }
-              this.save();
-              console.log(`Auto-regenerating broken game on machine ${machine.index} (attempt ${machine.regenAttempts}/2)`);
-              this._autoRegenerate(machine, saved.recipe, review.feedback);
-            } else {
-              // Give up — mark machine as broken, NPCs skip it
-              console.log(`Machine ${machine.index} permanently broken after 2 regen attempts`);
-              machine.state = 'broken';
-              if (saved) saved.broken = true;
-              this.save();
-              machine.drawBroken();
-            }
+          if (machine.regenAttempts < 2 && saved?.recipe) {
+            machine.regenAttempts++;
+            machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0 };
+            machine._aiReviewed = false; // allow re-review after regen
+            if (saved) saved.regenAttempts = machine.regenAttempts;
+            this.save();
+            console.log(`Auto-regenerating machine ${machine.index} (attempt ${machine.regenAttempts}/2)`);
+            this._autoRegenerate(machine, saved.recipe, review.feedback);
+          } else {
+            console.log(`Machine ${machine.index} permanently broken after 2 regen attempts`);
+            machine.state = 'broken';
+            if (saved) saved.broken = true;
+            this.save();
+            machine.drawBroken();
           }
         }
 
         // Update history with AI feedback
-        if (this.gameState.npcHistory) {
+        if (review.feedback && this.gameState.npcHistory) {
           const lastEntry = [...this.gameState.npcHistory].reverse().find(
             e => e.machineIndex === machine.index
           );
-          if (lastEntry) {
-            lastEntry.rating = finalRating;
-            lastEntry.aiFeedback = review.feedback;
-            this.save();
-          }
+          if (lastEntry) { lastEntry.aiFeedback = review.feedback; this.save(); }
         }
       });
     }
