@@ -194,8 +194,9 @@ export class NpcGameRunner {
 
   _captureFrame(machine) {
     if (!this.canvas || !machine) return;
+    if (!machine.screenCtx || !machine.screenTexture) return;
     try {
-      machine.screenCtx.drawImage(this.canvas, 0, 0);
+      machine.screenCtx.drawImage(this.canvas, 0, 0, 800, 600);
       machine.screenTexture.needsUpdate = true;
     } catch (e) {
       // Ignore capture errors
