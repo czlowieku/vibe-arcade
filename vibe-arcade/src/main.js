@@ -35,11 +35,18 @@ const MODIFIER_DESC = {
   boss: 'boss enemy appears after 30s',
   powerups: 'random power-ups spawn',
 };
+const ENGINE_DESC = {
+  phaser: 'Phaser 3 — full arcade physics game engine',
+  pixijs: 'PixiJS — GPU-accelerated 2D rendering',
+  p5js: 'p5.js — creative coding framework',
+  matterjs: 'Matter.js — realistic 2D physics engine',
+};
 
 function showPromptPanel(recipe) {
   const genre = getCardById(recipe.genre.cardId);
   const theme = getCardById(recipe.theme.cardId);
   const modifier = recipe.modifier ? getCardById(recipe.modifier.cardId) : null;
+  const engine = recipe.engine ? getCardById(recipe.engine.cardId) : null;
 
   const summaryEl = document.getElementById('prompt-summary');
   summaryEl.textContent = '';
@@ -67,10 +74,16 @@ function showPromptPanel(recipe) {
   if (modifier) {
     addLine('Modifier', modifier.icon + ' ' + modifier.name, 'tag-modifier', MODIFIER_DESC[modifier.id] || modifier.id);
   }
+  if (engine) {
+    addLine('Engine', engine.icon + ' ' + engine.name, 'tag-engine', ENGINE_DESC[engine.id] || engine.id);
+  }
 
   const starsNote = document.createElement('p');
   starsNote.style.cssText = 'margin-top:12px;color:#666;font-size:12px;';
-  starsNote.textContent = `Card levels: genre ★${recipe.genre.stars} | theme ★${recipe.theme.stars}${recipe.modifier ? ` | modifier ★${recipe.modifier.stars}` : ''}`;
+  let starsText = `Card levels: genre ★${recipe.genre.stars} | theme ★${recipe.theme.stars}`;
+  if (recipe.modifier) starsText += ` | modifier ★${recipe.modifier.stars}`;
+  if (recipe.engine) starsText += ` | engine ★${recipe.engine.stars}`;
+  starsNote.textContent = starsText;
   summaryEl.appendChild(starsNote);
 
   document.getElementById('prompt-extra').value = '';
@@ -114,11 +127,12 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.9;
+renderer.toneMappingExposure = 1.15;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a15);
-scene.fog = new THREE.FogExp2(0x0a0a15, 0.035);
+scene.background = new THREE.Color(0x12121f);
+// Subtle fog — just enough for depth, not darkness
+scene.fog = new THREE.FogExp2(0x12121f, 0.006);
 // Dark atmospheric background
 
 // Perspective camera — better for raycasting and more immersive
@@ -226,12 +240,12 @@ function showMachineCards(machine) {
     const foundGenre = genres.find(g => t.includes(g.replace('-', ' ')) || t.includes(g));
     const foundTheme = themes.find(th => t.includes(th));
     if (foundGenre || foundTheme) {
-      saved.recipe = { genre: foundGenre || null, theme: foundTheme || null, modifier: null, cardLevels: {} };
+      saved.recipe = { genre: foundGenre || null, theme: foundTheme || null, modifier: null, engine: null, cardLevels: {} };
     }
   }
   if (!saved.recipe) { container.classList.add('hidden'); return; }
 
-  const { genre, theme, modifier } = saved.recipe;
+  const { genre, theme, modifier, engine } = saved.recipe;
   const cardLevels = saved.recipe.cardLevels || {};
 
   // Original recipe cards
@@ -239,6 +253,7 @@ function showMachineCards(machine) {
     [genre, cardLevels.genre || 1],
     [theme, cardLevels.theme || 1],
     [modifier, cardLevels.modifier || 1],
+    [engine, cardLevels.engine || 1],
   ]) {
     if (!id) continue;
     const el = _buildMiniCard(id, stars);
@@ -678,6 +693,8 @@ canvas.addEventListener('drop', (e) => {
     instruction = `COMPLETELY retheme this game with: ${card.name} — ${card.desc}. Change ALL colors, ALL visual elements, background, particles, text — everything must match the new theme. The gameplay stays the same but it should LOOK totally different.`;
   } else if (card.category === 'genre') {
     instruction = `Blend in elements of this genre: ${card.name} — ${card.desc}. Add genre-specific mechanics while keeping the core game working. Make the change VERY noticeable.`;
+  } else if (card.category === 'engine') {
+    instruction = `Port this game to use the ${card.name} engine (${card.desc}). Rewrite using ${card.name} APIs while keeping the same gameplay. Must still use startGame(canvas, onScore, onGameOver) API.`;
   }
 
   // Save the added card to machine data

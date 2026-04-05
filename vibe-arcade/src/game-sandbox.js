@@ -2,6 +2,12 @@
 // The game code is sanitized server-side before reaching here.
 // This is intentional dynamic code execution for AI-generated mini-games.
 
+const ALLOWED_CDN_HOSTS = new Set([
+  'cdn.jsdelivr.net',
+  'cdnjs.cloudflare.com',
+  'unpkg.com',
+]);
+
 export class GameSandbox {
   constructor() {
     this.gameCanvas = document.createElement('canvas');
@@ -11,9 +17,41 @@ export class GameSandbox {
     this.running = false;
     this.onScore = null;
     this.onGameOver = null;
+    this._loadedLibs = new Set();
   }
 
-  load(gameCode, onScore, onGameOver) {
+  async _loadDependencies(deps) {
+    if (!deps || deps.length === 0) return;
+    const toLoad = deps.filter(url => !this._loadedLibs.has(url));
+    for (const url of toLoad) {
+      // Validate CDN URL
+      try {
+        const parsed = new URL(url);
+        if (!ALLOWED_CDN_HOSTS.has(parsed.hostname)) {
+          console.warn('Blocked non-whitelisted CDN:', url);
+          continue;
+        }
+      } catch {
+        console.warn('Invalid dependency URL:', url);
+        continue;
+      }
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = () => {
+          this._loadedLibs.add(url);
+          resolve();
+        };
+        script.onerror = () => {
+          console.warn('Failed to load dependency:', url);
+          resolve(); // Don't block on failed loads
+        };
+        document.head.appendChild(script);
+      });
+    }
+  }
+
+  async load(gameCode, onScore, onGameOver, deps) {
     this.stop();
     this.onScore = onScore;
     this.onGameOver = onGameOver;
@@ -22,6 +60,9 @@ export class GameSandbox {
     // Clear canvas to dark background
     this.gameCtx.fillStyle = '#0a0a1a';
     this.gameCtx.fillRect(0, 0, 800, 600);
+
+    // Load CDN dependencies first
+    await this._loadDependencies(deps);
 
     // Build a self-contained script and run it via a Blob-based script element
     // This is the core mechanic of Vibe Arcade: AI generates game code that runs here

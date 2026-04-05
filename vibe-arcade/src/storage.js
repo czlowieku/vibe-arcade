@@ -17,9 +17,9 @@ const defaultState = {
   coins: 0,
   level: 1,
   cards: [],
-  machines: Array(6).fill(null),
+  machines: Array(8).fill(null),
   totalGamesPlayed: 0,
-  machineRatings: Array(6).fill(null),
+  machineRatings: Array(8).fill(null),
   totalNpcCoinsEarned: 0,
   npcHistory: [],
 };

@@ -5,7 +5,7 @@ export class CardUI {
     this.gameState = gameState;
     this.onGenerate = onGenerate;
     this.onCancel = onCancel;
-    this.selectedRecipe = { genre: null, theme: null, modifier: null };
+    this.selectedRecipe = { genre: null, theme: null, modifier: null, engine: null };
     this.currentCategory = null;
 
     this._bindElements();
@@ -45,7 +45,7 @@ export class CardUI {
   }
 
   show() {
-    this.selectedRecipe = { genre: null, theme: null, modifier: null };
+    this.selectedRecipe = { genre: null, theme: null, modifier: null, engine: null };
     this.currentCategory = 'genre';
     this._updateSlots();
     this._renderAvailableCards('genre');
@@ -128,6 +128,16 @@ export class CardUI {
         } else if (category === 'theme' && !this.selectedRecipe.modifier) {
           this.currentCategory = 'modifier';
           this._renderAvailableCards('modifier');
+        } else if (category === 'modifier' && !this.selectedRecipe.engine) {
+          // Auto-advance to engine only if player has engine cards
+          const hasEngineCards = this.gameState.cards.some(c => {
+            const card = getCardById(c.cardId);
+            return card && card.category === 'engine';
+          });
+          if (hasEngineCards) {
+            this.currentCategory = 'engine';
+            this._renderAvailableCards('engine');
+          }
         }
       });
       this.availableCards.appendChild(el);

@@ -124,7 +124,7 @@ export class HUD {
     document.getElementById('collection-progress').textContent =
       `${totalOwned} / ${totalCards} cards unlocked (${Math.round(totalOwned / totalCards * 100)}%)`;
 
-    const sections = { genre: 'collection-section-genre', theme: 'collection-section-theme', modifier: 'collection-section-modifier' };
+    const sections = { genre: 'collection-section-genre', theme: 'collection-section-theme', modifier: 'collection-section-modifier', engine: 'collection-section-engine' };
 
     for (const [category, sectionId] of Object.entries(sections)) {
       const grid = document.getElementById(sectionId).querySelector('.collection-grid');

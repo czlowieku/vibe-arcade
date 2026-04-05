@@ -354,7 +354,8 @@ export class NpcManager {
         },
         (finalScore) => {
           npc._simScore = finalScore;
-        }
+        },
+        saved?.dependencies || []
       );
     } else {
       npc.gameRunner = null;

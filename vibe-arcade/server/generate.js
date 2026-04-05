@@ -26,6 +26,52 @@ const MODIFIER_DESCRIPTIONS = {
   powerups: 'Spawn random power-ups: speed boost (blue), shield (green), double points (gold), size change (purple). Each lasts 5 seconds.',
 };
 
+function buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions) {
+  const { mergedCode, scaffold, aiContext } = codeBundle;
+
+  let modifierSection = '';
+  if (modifier && MODIFIER_DESCRIPTIONS[modifier]) {
+    modifierSection = `\nSpecial Modifier: ${modifier}\n${MODIFIER_DESCRIPTIONS[modifier]}`;
+  }
+
+  return `You are assembling a mini-game from pre-built code modules. USE the provided functions — do NOT rewrite them.
+
+=== PROVIDED CODE (include this verbatim at the top of your output) ===
+${mergedCode}
+
+=== SCAFFOLD (use this as your startGame template) ===
+${scaffold || '// No scaffold — create a startGame(canvas, onScore, onGameOver) function using the provided utilities.'}
+
+=== MODULE GUIDE ===
+${aiContext}
+
+=== ASSEMBLY INSTRUCTIONS ===
+Genre: ${genre} — ${GENRE_DESCRIPTIONS[genre] || genre}
+Visual Theme: ${theme} — ${THEME_DESCRIPTIONS[theme] || theme}
+${modifierSection}
+${extraInstructions ? `\nADDITIONAL PLAYER INSTRUCTIONS:\n${extraInstructions}\n` : ''}
+
+CRITICAL ASSEMBLY RULES:
+1. Start your output with ALL the provided utility code (classes, functions, constants)
+2. Then write a startGame(canvas, onScore, onGameOver) function that USES these utilities
+3. If a scaffold is provided, use it as your starting point and flesh it out
+4. Call the utility classes and functions — do NOT reimplement them
+5. The theme module provides drawing helpers — use them for ALL visual rendering
+6. The modifier module provides game mechanic systems — integrate them into the game loop
+7. canvas is 800x600, use Canvas2D unless an engine module is present
+8. Support arrow keys AND WASD for movement, Space for action
+9. onScore(points) when player scores, onGameOver(finalScore) when game ends
+10. Game should be fun and last 30-90 seconds
+11. Include a visible score display
+
+CRITICAL Canvas2D rules (if no engine module):
+- For gradients use ctx.createLinearGradient() NOT CSS strings
+- fillStyle only accepts color strings or CanvasGradient objects
+- Always clear/fill the canvas each frame
+
+Return ONLY the JavaScript code. No markdown code fences, no explanation.`;
+}
+
 function buildPrompt(genre, theme, modifier, cardLevels, extraInstructions) {
   const complexity = Math.max(cardLevels.genre, cardLevels.theme, cardLevels.modifier || 1);
   const complexityNote = complexity > 1
@@ -74,8 +120,10 @@ The code must be a complete, self-contained script that defines startGame at the
 }
 
 // Streaming version — sends SSE events as code is generated
-export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res) {
-  const prompt = buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
+export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res, codeBundle) {
+  const prompt = codeBundle
+    ? buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions)
+    : buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
 
   const client = new Anthropic({ apiKey });
 
@@ -101,7 +149,7 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   try {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-20250514',
-      max_tokens: 8000,
+      max_tokens: 12000,
       messages: [{ role: 'user', content: prompt }],
     });
 

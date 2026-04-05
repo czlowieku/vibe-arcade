@@ -19,7 +19,7 @@ export class NpcGameRunner {
     this._pressedKeys = new Set();
   }
 
-  start(gameCode, skill, onScore, onGameOver) {
+  start(gameCode, skill, onScore, onGameOver, dependencies) {
     this.stop();
     this.skill = skill;
     this.score = 0;
@@ -37,12 +37,20 @@ export class NpcGameRunner {
     const iframeDoc = this.iframe.contentDocument;
     const iframeWin = this.iframe.contentWindow;
 
+    // Build dependency script tags
+    let depScripts = '';
+    if (dependencies && dependencies.length > 0) {
+      for (const url of dependencies) {
+        depScripts += `<script src="${url}"></` + `script>\n`;
+      }
+    }
+
     // Write canvas + game code into iframe
     iframeDoc.open();
     iframeDoc.write(`<!DOCTYPE html>
 <html><body style="margin:0;overflow:hidden;">
 <canvas id="gameCanvas" width="800" height="600"></canvas>
-<script>
+${depScripts}<script>
   var __npcScore = 0;
   function __onScore(pts) {
     __npcScore += pts;

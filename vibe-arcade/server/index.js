@@ -11,10 +11,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // SSE streaming endpoint
 app.post('/api/generate', async (req, res) => {
-  const { genre, theme, modifier, cardLevels, extraInstructions, apiKey } = req.body;
+  const { genre, theme, modifier, cardLevels, extraInstructions, apiKey, codeBundle, dependencies } = req.body;
 
   if (!genre || !theme) {
     return res.status(400).json({ error: 'genre and theme are required' });
@@ -24,9 +25,18 @@ app.post('/api/generate', async (req, res) => {
     return res.status(400).json({ error: 'API key is required. Enter your Anthropic API key in settings.' });
   }
 
+  // Validate dependencies if present
+  if (dependencies && dependencies.length > 0) {
+    const { validateDependencies } = await import('./sanitize.js');
+    const depErrors = validateDependencies(dependencies);
+    if (depErrors.length > 0) {
+      return res.status(400).json({ error: 'Invalid dependencies: ' + depErrors.join(', ') });
+    }
+  }
+
   try {
-    console.log(`Generating game: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}`);
-    const result = await generateGameStream(genre, theme, modifier, cardLevels || {}, extraInstructions || '', apiKey, res);
+    console.log(`Generating game: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}${codeBundle ? ' [assembled]' : ''}`);
+    const result = await generateGameStream(genre, theme, modifier, cardLevels || {}, extraInstructions || '', apiKey, res, codeBundle || null);
     console.log(`Game generated: ${result.title} (${result.gameCode.length} chars)`);
   } catch (err) {
     console.error('Generation failed:', err.message);

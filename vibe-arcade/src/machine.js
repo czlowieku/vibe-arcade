@@ -61,9 +61,11 @@ export class ArcadeMachine {
     upper.castShadow = true;
     this.group.add(upper);
 
-    // === SIDE ART PANELS (colored) ===
+    // === SIDE ART PANELS (colored, glowing) ===
     const sideMat = new THREE.MeshStandardMaterial({
       color: this.cabinetColor,
+      emissive: this.cabinetColor,
+      emissiveIntensity: 0.3,
       roughness: 0.5,
       metalness: 0.1,
     });
@@ -95,7 +97,7 @@ export class ArcadeMachine {
     const marqueeLightMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       emissive: 0xfff5e0,
-      emissiveIntensity: 0.6,
+      emissiveIntensity: 1.5,
     });
     const marqueeLight = new THREE.Mesh(marqueeLightGeo, marqueeLightMat);
     marqueeLight.position.set(0, 2.2, 0.3);
@@ -112,10 +114,13 @@ export class ArcadeMachine {
     bezel.position.set(0, 1.6, 0.33);
     this.group.add(bezel);
 
-    // Screen
+    // Screen — glowing CRT
     const screenGeo = new THREE.PlaneGeometry(0.95, 0.7);
-    const screenMat = new THREE.MeshBasicMaterial({
+    const screenMat = new THREE.MeshStandardMaterial({
       map: this.screenTexture,
+      emissive: 0xffffff,
+      emissiveMap: this.screenTexture,
+      emissiveIntensity: 1.2,
     });
     this.screenMesh = new THREE.Mesh(screenGeo, screenMat);
     this.screenMesh.position.set(0, 1.6, 0.36);
@@ -125,7 +130,7 @@ export class ArcadeMachine {
     // === CONTROL PANEL (angled) ===
     const panelGeo = new THREE.BoxGeometry(1.0, 0.12, 0.55);
     const panelMat = new THREE.MeshStandardMaterial({
-      color: 0x222222,
+      color: 0x1a1a1a,
       roughness: 0.6,
     });
     const panel = new THREE.Mesh(panelGeo, panelMat);
@@ -133,31 +138,58 @@ export class ArcadeMachine {
     panel.rotation.x = -0.25;
     this.group.add(panel);
 
-    // === JOYSTICK (black stick, red ball) ===
-    // Stick
+    // Panel edge trim (glowing accent)
+    const trimGeo = new THREE.BoxGeometry(1.02, 0.02, 0.02);
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: this.cabinetColor,
+      emissive: this.cabinetColor,
+      emissiveIntensity: 1.0,
+    });
+    const trimFront = new THREE.Mesh(trimGeo, trimMat);
+    trimFront.position.set(0, 0.97, 0.56);
+    this.group.add(trimFront);
+
+    // === JOYSTICK (black stick, glowing red ball) ===
     const stickGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.14);
-    const stickMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.3 });
+    const stickMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.5, roughness: 0.3 });
     const stick = new THREE.Mesh(stickGeo, stickMat);
-    stick.position.set(-0.22, 1.12, 0.25);
+    stick.position.set(-0.28, 1.12, 0.25);
     this.group.add(stick);
-    // Ball top (red)
+    // Joystick base ring
+    const jBaseGeo = new THREE.TorusGeometry(0.04, 0.008, 8, 16);
+    const jBaseMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.6, roughness: 0.3 });
+    const jBase = new THREE.Mesh(jBaseGeo, jBaseMat);
+    jBase.position.set(-0.28, 1.06, 0.25);
+    jBase.rotation.x = Math.PI / 2;
+    this.group.add(jBase);
+    // Ball top (glowing red)
     const ballGeo = new THREE.SphereGeometry(0.04, 12, 12);
-    const ballMat = new THREE.MeshStandardMaterial({ color: 0xdd0000, roughness: 0.4 });
+    const ballMat = new THREE.MeshStandardMaterial({
+      color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5, roughness: 0.3,
+    });
     const ball = new THREE.Mesh(ballGeo, ballMat);
-    ball.position.set(-0.22, 1.2, 0.25);
+    ball.position.set(-0.28, 1.2, 0.25);
     this.group.add(ball);
 
-    // === BUTTONS (classic arcade colors) ===
-    const btnGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.025, 16);
-    const btnColors = [0xdd0000, 0x0066dd, 0xdddd00];
-    for (let i = 0; i < 3; i++) {
+    // === BUTTONS (6 buttons, 2 rows, glowing) ===
+    const btnGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.02, 16);
+    const btnColors = [0xff0000, 0x0088ff, 0xffff00, 0x00ff00, 0xff00ff, 0x00ffff];
+    const btnPositions = [
+      // Top row (3 buttons)
+      [0.0, 1.10, 0.22], [0.12, 1.10, 0.20], [0.24, 1.10, 0.22],
+      // Bottom row (3 buttons, slightly offset)
+      [0.0, 1.06, 0.30], [0.12, 1.06, 0.28], [0.24, 1.06, 0.30],
+    ];
+    for (let i = 0; i < 6; i++) {
       const btnMat = new THREE.MeshStandardMaterial({
         color: btnColors[i],
-        roughness: 0.4,
+        emissive: btnColors[i],
+        emissiveIntensity: 0.6,
+        roughness: 0.3,
         metalness: 0.1,
       });
       const btn = new THREE.Mesh(btnGeo, btnMat);
-      btn.position.set(0.08 + i * 0.13, 1.08, 0.25);
+      btn.position.set(btnPositions[i][0], btnPositions[i][1], btnPositions[i][2]);
       this.group.add(btn);
     }
 
@@ -171,6 +203,15 @@ export class ArcadeMachine {
     const slot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.01), slotMat);
     slot.position.set(0, 0.6, 0.42);
     this.group.add(slot);
+
+    // Coin insert glow
+    const coinGlowGeo = new THREE.BoxGeometry(0.18, 0.04, 0.01);
+    const coinGlowMat = new THREE.MeshStandardMaterial({
+      color: 0x00ff88, emissive: 0x00ff88, emissiveIntensity: 1.0,
+    });
+    const coinGlow = new THREE.Mesh(coinGlowGeo, coinGlowMat);
+    coinGlow.position.set(0, 0.52, 0.42);
+    this.group.add(coinGlow);
 
     // === FEET / LEVELERS ===
     const footMat = new THREE.MeshStandardMaterial({ color: 0x444444 });

@@ -1,6 +1,12 @@
 import { getCardById } from './card-system.js';
 import { GameSandbox } from './game-sandbox.js';
 import { getApiKey } from './storage.js';
+import { CardModuleRegistry } from './card-module-registry.js';
+import { CodeAssembler } from './code-assembler.js';
+
+// Singleton registry and assembler
+const registry = new CardModuleRegistry();
+const assembler = new CodeAssembler(registry);
 
 export class GameManager {
   constructor(gameState, saveCallback) {
@@ -17,10 +23,21 @@ export class GameManager {
     const genre = getCardById(recipe.genre.cardId);
     const theme = getCardById(recipe.theme.cardId);
     const modifier = recipe.modifier ? getCardById(recipe.modifier.cardId) : null;
+    const engine = recipe.engine ? getCardById(recipe.engine.cardId) : null;
 
     machine.state = 'generating';
     machine.streamedCode = '';
     this._drawStreamingScreen(machine, '');
+
+    // Assemble code from card modules
+    let codeBundle = null;
+    let dependencies = [];
+    try {
+      codeBundle = await assembler.assemble(recipe);
+      dependencies = codeBundle.dependencies || [];
+    } catch (err) {
+      console.warn('Code assembly failed, falling back to plain generation:', err);
+    }
 
     try {
       const response = await fetch('/api/generate', {
@@ -37,6 +54,8 @@ export class GameManager {
           },
           extraInstructions,
           apiKey: getApiKey(),
+          codeBundle: codeBundle || undefined,
+          dependencies: dependencies.length > 0 ? dependencies : undefined,
         }),
       });
 
@@ -75,12 +94,15 @@ export class GameManager {
                 genre: genre.id,
                 theme: theme.id,
                 modifier: modifier?.id || null,
+                engine: engine?.id || null,
                 cardLevels: {
                   genre: recipe.genre.stars,
                   theme: recipe.theme.stars,
                   modifier: recipe.modifier?.stars || 0,
+                  engine: recipe.engine?.stars || 0,
                 },
               },
+              dependencies: dependencies,
               suggestions: [],
               brokenCount: 0,
             };
@@ -180,6 +202,10 @@ export class GameManager {
     machine.state = 'playing';
     window.__vibe_player_playing = true;
 
+    // Get dependencies from saved machine data
+    const saved = this.gameState.machines[machine.index];
+    const deps = saved?.dependencies || [];
+
     this.sandbox.load(
       machine.gameCode,
       (points) => {
@@ -208,7 +234,8 @@ export class GameManager {
         if (this.onGameOver) {
           this.onGameOver(score, coinsEarned);
         }
-      }
+      },
+      deps
     );
   }
 

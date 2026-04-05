@@ -140,30 +140,33 @@ export class ArcadeRoom {
     bbRight.position.set(7.96, 0.1, 0);
     this.scene.add(bbRight);
 
-    // === LIGHTING — warm and bright like real arcade ===
-    // Warm ambient — moderate
-    const ambient = new THREE.AmbientLight(0xfff5e6, 0.3);
+    // === LIGHTING — bright arcade with warm tones ===
+    const ambient = new THREE.AmbientLight(0xfff5e6, 0.9);
     this.scene.add(ambient);
 
-    // Overhead lights (warm white, toned down)
+    // Grid of overhead lights — 3x3 coverage
     const overheadPositions = [
-      [0, 5.5, -3], [0, 5.5, 3], [-4, 5.5, 0], [4, 5.5, 0]
+      [-4, 5.5, -5], [0, 5.5, -5], [4, 5.5, -5],
+      [-4, 5.5, 0],  [0, 5.5, 0],  [4, 5.5, 0],
+      [-4, 5.5, 5],  [0, 5.5, 5],  [4, 5.5, 5],
     ];
     for (const pos of overheadPositions) {
-      const light = new THREE.PointLight(0xfff8e8, 0.5, 16);
+      const light = new THREE.PointLight(0xfff8e8, 0.8, 14);
       light.position.set(...pos);
       this.scene.add(light);
     }
 
-    // Central overhead light
-    const mainLight = new THREE.PointLight(0xfff5e0, 0.4, 25);
-    mainLight.position.set(0, 5.8, 0);
-    this.scene.add(mainLight);
+    // Two strong directional fills from different angles
+    const fillLight1 = new THREE.DirectionalLight(0xfffbe8, 0.6);
+    fillLight1.position.set(5, 8, 10);
+    this.scene.add(fillLight1);
+    const fillLight2 = new THREE.DirectionalLight(0xfff5e0, 0.4);
+    fillLight2.position.set(-5, 8, -5);
+    this.scene.add(fillLight2);
 
-    // Directional fill light
-    const fillLight = new THREE.DirectionalLight(0xfffbe8, 0.1);
-    fillLight.position.set(5, 8, 10);
-    this.scene.add(fillLight);
+    // Hemisphere light — sky/ground fill
+    const hemiLight = new THREE.HemisphereLight(0xfff8e8, 0x444422, 0.3);
+    this.scene.add(hemiLight);
 
     // === FRONT WALL with door opening ===
     // Left section of front wall (x: -8 to -1.5)
@@ -244,7 +247,7 @@ export class ArcadeRoom {
     this.scene.add(openSign);
 
     // Entrance light above door
-    const entranceLight = new THREE.PointLight(0xfff5e0, 0.4, 8);
+    const entranceLight = new THREE.PointLight(0xfff5e0, 0.8, 8);
     entranceLight.position.set(0, 3.5, 8.5);
     this.scene.add(entranceLight);
 
@@ -334,10 +337,10 @@ export class ArcadeRoom {
     this._arcadeSignMat = signMat;
 
     // === POSTER FRAMES on walls ===
-    this._addPoster(-6, 3.5, -7.94, 0, '#e74c3c', 'PLAY!');
-    this._addPoster(5.5, 3.5, -7.94, 0, '#3498db', 'HIGH\nSCORE');
-    this._addPoster(-7.94, 3.5, -5, Math.PI / 2, '#2ecc71', 'INSERT\nCOIN');
-    this._addPoster(7.94, 3.5, -5, -Math.PI / 2, '#f39c12', 'GAME\nON!');
+    this._addPoster(-6, 3.8, -7.94, 0, '#e74c3c', 'PLAY!');
+    this._addPoster(6, 3.8, -7.94, 0, '#3498db', 'HIGH\nSCORE');
+    this._addPoster(-7.94, 3.8, -5, Math.PI / 2, '#2ecc71', 'INSERT\nCOIN');
+    this._addPoster(7.94, 3.8, -5, -Math.PI / 2, '#f39c12', 'GAME\nON!');
 
     // === COUNTER / RECEPTION DESK near entrance ===
     const counterMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.6 });
@@ -367,8 +370,6 @@ export class ArcadeRoom {
     this.scene.add(regScreen);
 
     // === GUMBALL MACHINE ===
-    this._addGumballMachine(-6.5, 5);
-
     // === TRASH CAN ===
     const trashMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 });
     const trashCan = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.7, 12), trashMat);
@@ -388,40 +389,6 @@ export class ArcadeRoom {
     this._addStool(0, -4.5);
     this._addStool(3.5, -4.5);
 
-    // === COIN CHANGE MACHINE ===
-    const changeMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4, metalness: 0.3 });
-    const changeMachine = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.6), changeMat);
-    changeMachine.position.set(-7.2, 0.9, 3);
-    changeMachine.castShadow = true;
-    this.scene.add(changeMachine);
-    // Coin slot
-    const slotMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
-    const coinSlot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.02), slotMat);
-    coinSlot.position.set(-7.2, 1.3, 2.7);
-    this.scene.add(coinSlot);
-    // Dollar bill slot
-    const billSlot = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.02), slotMat);
-    billSlot.position.set(-7.2, 1.5, 2.7);
-    this.scene.add(billSlot);
-    // "CHANGE" label
-    const changeCanvas = document.createElement('canvas');
-    changeCanvas.width = 128;
-    changeCanvas.height = 64;
-    const chCtx = changeCanvas.getContext('2d');
-    chCtx.fillStyle = '#f1c40f';
-    chCtx.fillRect(0, 0, 128, 64);
-    chCtx.fillStyle = '#2c3e50';
-    chCtx.font = 'bold 24px Arial';
-    chCtx.textAlign = 'center';
-    chCtx.textBaseline = 'middle';
-    chCtx.fillText('CHANGE', 64, 32);
-    const changeTexture = new THREE.CanvasTexture(changeCanvas);
-    const changeLabel = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.5, 0.25),
-      new THREE.MeshStandardMaterial({ map: changeTexture })
-    );
-    changeLabel.position.set(-7.2, 1.7, 2.7);
-    this.scene.add(changeLabel);
 
     // === FLOOR MAT at entrance ===
     const matGeo = new THREE.PlaneGeometry(3, 1.5);
@@ -510,10 +477,10 @@ export class ArcadeRoom {
     this.scene.add(hsBoard);
 
     // More retro posters
-    this._addPoster(-7.94, 3.5, 2, Math.PI / 2, '#9b59b6', 'PRESS\nSTART');
-    this._addPoster(7.94, 3.5, 2, -Math.PI / 2, '#1abc9c', 'LEVEL\nUP!');
-    this._addPoster(-3, 5.0, -7.94, 0, '#e67e22', '1UP');
-    this._addPoster(3, 5.0, -7.94, 0, '#27ae60', 'READY?');
+    this._addPoster(-7.94, 3.8, 2, Math.PI / 2, '#9b59b6', 'PRESS\nSTART');
+    this._addPoster(7.94, 3.8, 2, -Math.PI / 2, '#1abc9c', 'LEVEL\nUP!');
+    this._addPoster(-3, 3.8, -7.94, 0, '#e67e22', '1UP');
+    this._addPoster(3, 3.8, -7.94, 0, '#27ae60', 'READY?');
 
     // === FLOOR CABLES from machines ===
     const cableMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
@@ -646,18 +613,20 @@ export class ArcadeRoom {
   }
 
   _placeMachines() {
-    // 6 machines: 3 along back wall, 3 along sides
+    // 6 machines: wall ones flush, center one stays
     const placements = [
-      // Back wall - 3 machines facing forward
-      { pos: new THREE.Vector3(-3.5, 0, -6.5), rot: 0 },
-      { pos: new THREE.Vector3(0, 0, -6.5), rot: 0 },
-      { pos: new THREE.Vector3(3.5, 0, -6.5), rot: 0 },
-      // Left wall - 1 machine facing right
-      { pos: new THREE.Vector3(-6.5, 0, -2), rot: Math.PI / 2 },
-      // Right wall - 1 machine facing left
-      { pos: new THREE.Vector3(6.5, 0, -2), rot: -Math.PI / 2 },
-      // Center area - 1 machine facing forward
+      // Back wall - 3 machines flush
+      { pos: new THREE.Vector3(-3.5, 0, -7.4), rot: 0 },
+      { pos: new THREE.Vector3(0, 0, -7.4), rot: 0 },
+      { pos: new THREE.Vector3(3.5, 0, -7.4), rot: 0 },
+      // Left wall - flush
+      { pos: new THREE.Vector3(-7.4, 0, -2), rot: Math.PI / 2 },
+      // Right wall - flush
+      { pos: new THREE.Vector3(7.4, 0, -2), rot: -Math.PI / 2 },
+      // Center area - 3 machines in a row
+      { pos: new THREE.Vector3(-3.5, 0, -2), rot: 0 },
       { pos: new THREE.Vector3(0, 0, -2), rot: 0 },
+      { pos: new THREE.Vector3(3.5, 0, -2), rot: 0 },
     ];
 
     for (let i = 0; i < placements.length; i++) {
@@ -719,8 +688,12 @@ export class ArcadeRoom {
 
     // === VENDING MACHINE — left wall ===
     placeModel(s, M + 'vending-machine.glb', {
-      position: [-7, 0, 0], rotation: [0, Math.PI / 2, 0], scale: 0.7,
+      position: [-7.5, 0, 5], rotation: [0, Math.PI / 2, 0], scale: 0.7,
     });
+    // Vending machine glow
+    const vendLight = new THREE.PointLight(0x44aaff, 0.8, 5);
+    vendLight.position.set(-6.5, 1.5, 5);
+    this.scene.add(vendLight);
 
     // === TROPHY on counter ===
     placeModel(s, M + 'trophy.glb', {
@@ -728,24 +701,15 @@ export class ArcadeRoom {
     });
 
     // === PLANTS — corners ===
-    placeModel(s, M + 'small-plant.glb', {
-      position: [-7.2, 0, -7], scale: 2.0,
+    placeModel(s, K + 'pottedPlant.glb', {
+      position: [-7.2, 0, -7], scale: 2.5,
     });
-    placeModel(s, M + 'small-plant.glb', {
-      position: [7.2, 0, -7], scale: 2.0,
+    placeModel(s, K + 'pottedPlant.glb', {
+      position: [7.2, 0, -7], scale: 2.5,
     });
 
     // === KENNEY FURNITURE ===
 
-    // Lounge sofa — waiting area near entrance, against left wall
-    placeModel(s, K + 'loungeSofa.glb', {
-      position: [-7, 0, 5.5], rotation: [0, Math.PI / 2, 0], scale: 2.0,
-    });
-
-    // Coffee table in front of lounge sofa
-    placeModel(s, K + 'tableCoffee.glb', {
-      position: [-5.5, 0, 5.5], scale: 2.0,
-    });
 
     // Potted plant near entrance
     placeModel(s, K + 'pottedPlant.glb', {
@@ -768,10 +732,6 @@ export class ArcadeRoom {
       position: [7.5, 2.5, -7.5], rotation: [0, -Math.PI / 4, 0], scale: 3.0,
     });
 
-    // Vintage TV on wall — shows "attract mode"
-    placeModel(s, K + 'televisionVintage.glb', {
-      position: [0, 3.5, -7.9], scale: 3.0,
-    });
 
     // Bookcase with games/stuff — left wall
     placeModel(s, K + 'bookcaseOpen.glb', {
@@ -791,10 +751,6 @@ export class ArcadeRoom {
       position: [4.5, 0, 5], scale: 2.0,
     });
 
-    // Rug in center area
-    placeModel(s, K + 'rugRound.glb', {
-      position: [0, 0.01, 0], scale: 4.0,
-    });
 
     // Ceiling fan
     placeModel(s, K + 'ceilingFan.glb', {
@@ -811,15 +767,6 @@ export class ArcadeRoom {
       position: [-1.8, 0, 7.5], scale: 2.5,
     });
 
-    // Pillows on sofa area
-    placeModel(s, K + 'pillow.glb', {
-      position: [-7, 0.6, 5.7], rotation: [0, 0.3, 0], scale: 2.0,
-    });
-
-    // Lamp next to sofa
-    placeModel(s, K + 'lampRoundFloor.glb', {
-      position: [-7, 0, 4], scale: 2.5,
-    });
 
     // Second plant — right wall corner
     placeModel(s, K + 'plantSmall3.glb', {
