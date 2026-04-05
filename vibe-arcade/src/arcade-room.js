@@ -13,6 +13,7 @@ export class ArcadeRoom {
     this._addDecorations();
     this._placeMachines();
     this._placeModels();
+    this._addScreenGlows();
   }
 
   _buildRoom() {
@@ -98,7 +99,7 @@ export class ArcadeRoom {
 
     // === WALLS — cream/beige ===
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0xddd5c0,
+      color: 0x8a8070,
       roughness: 0.85,
       metalness: 0.0,
     });
@@ -141,7 +142,7 @@ export class ArcadeRoom {
 
     // === LIGHTING — warm and bright like real arcade ===
     // Warm ambient — moderate
-    const ambient = new THREE.AmbientLight(0xfff5e6, 1.0);
+    const ambient = new THREE.AmbientLight(0xfff5e6, 0.3);
     this.scene.add(ambient);
 
     // Overhead lights (warm white, toned down)
@@ -149,18 +150,18 @@ export class ArcadeRoom {
       [0, 5.5, -3], [0, 5.5, 3], [-4, 5.5, 0], [4, 5.5, 0]
     ];
     for (const pos of overheadPositions) {
-      const light = new THREE.PointLight(0xfff8e8, 1.2, 16);
+      const light = new THREE.PointLight(0xfff8e8, 0.5, 16);
       light.position.set(...pos);
       this.scene.add(light);
     }
 
     // Central overhead light
-    const mainLight = new THREE.PointLight(0xfff5e0, 1.0, 25);
+    const mainLight = new THREE.PointLight(0xfff5e0, 0.4, 25);
     mainLight.position.set(0, 5.8, 0);
     this.scene.add(mainLight);
 
     // Directional fill light
-    const fillLight = new THREE.DirectionalLight(0xfffbe8, 0.3);
+    const fillLight = new THREE.DirectionalLight(0xfffbe8, 0.1);
     fillLight.position.set(5, 8, 10);
     this.scene.add(fillLight);
 
@@ -243,7 +244,7 @@ export class ArcadeRoom {
     this.scene.add(openSign);
 
     // Entrance light above door
-    const entranceLight = new THREE.PointLight(0xfff5e0, 0.8, 8);
+    const entranceLight = new THREE.PointLight(0xfff5e0, 0.4, 8);
     entranceLight.position.set(0, 3.5, 8.5);
     this.scene.add(entranceLight);
 
@@ -329,6 +330,8 @@ export class ArcadeRoom {
     const sign = new THREE.Mesh(signGeo, signMat);
     sign.position.set(0, 5.0, -7.95);
     this.scene.add(sign);
+    this._arcadeSign = sign;
+    this._arcadeSignMat = signMat;
 
     // === POSTER FRAMES on walls ===
     this._addPoster(-6, 3.5, -7.94, 0, '#e74c3c', 'PLAY!');
@@ -427,6 +430,107 @@ export class ArcadeRoom {
     floorMat.rotation.x = -Math.PI / 2;
     floorMat.position.set(0, 0.005, 7.5);
     this.scene.add(floorMat);
+
+    // === NEON LED STRIPS along baseboards ===
+    const neonColors = [0xff00ff, 0x00fff5, 0xff00ff, 0x00fff5];
+    const neonPositions = [
+      // Back wall
+      { start: [-7.5, 0.22, -7.95], end: [7.5, 0.22, -7.95] },
+      // Left wall
+      { start: [-7.95, 0.22, -7.5], end: [-7.95, 0.22, 7.5] },
+      // Right wall
+      { start: [7.95, 0.22, -7.5], end: [7.95, 0.22, 7.5] },
+    ];
+    neonPositions.forEach((strip, i) => {
+      const dx = strip.end[0] - strip.start[0];
+      const dz = strip.end[2] - strip.start[2];
+      const length = Math.sqrt(dx * dx + dz * dz);
+      const cx = (strip.start[0] + strip.end[0]) / 2;
+      const cz = (strip.start[2] + strip.end[2]) / 2;
+      const angle = Math.atan2(dx, dz);
+
+      const stripGeo = new THREE.BoxGeometry(0.08, 0.04, length);
+      const stripMat = new THREE.MeshStandardMaterial({
+        color: neonColors[i % neonColors.length],
+        emissive: neonColors[i % neonColors.length],
+        emissiveIntensity: 2.0,
+      });
+      const neonStrip = new THREE.Mesh(stripGeo, stripMat);
+      neonStrip.position.set(cx, strip.start[1], cz);
+      neonStrip.rotation.y = angle;
+      this.scene.add(neonStrip);
+
+      // Colored point light from each strip
+      const neonLight = new THREE.PointLight(neonColors[i % neonColors.length], 0.3, 6);
+      neonLight.position.set(cx, 0.5, cz);
+      this.scene.add(neonLight);
+    });
+
+    // === HIGH SCORES board ===
+    const hsCanvas = document.createElement('canvas');
+    hsCanvas.width = 256;
+    hsCanvas.height = 384;
+    const hsCtx = hsCanvas.getContext('2d');
+    hsCtx.fillStyle = '#111';
+    hsCtx.fillRect(0, 0, 256, 384);
+    hsCtx.strokeStyle = '#f1c40f';
+    hsCtx.lineWidth = 3;
+    hsCtx.strokeRect(4, 4, 248, 376);
+    hsCtx.fillStyle = '#f1c40f';
+    hsCtx.font = 'bold 24px Courier New';
+    hsCtx.textAlign = 'center';
+    hsCtx.fillText('HIGH SCORES', 128, 36);
+    hsCtx.strokeStyle = '#f1c40f';
+    hsCtx.beginPath(); hsCtx.moveTo(20, 48); hsCtx.lineTo(236, 48); hsCtx.stroke();
+
+    const fakeScores = [
+      ['AAA', '999,999'], ['BOB', '888,420'], ['ACE', '777,777'],
+      ['ZIP', '654,321'], ['MAX', '500,000'], ['PRO', '420,069'],
+      ['NPC', '333,333'], ['???', '123,456'], ['LOL', '100,000'],
+      ['NEW', '050,000'],
+    ];
+    hsCtx.font = '16px Courier New';
+    fakeScores.forEach((entry, i) => {
+      const y = 72 + i * 30;
+      hsCtx.fillStyle = i === 0 ? '#f1c40f' : i < 3 ? '#e67e22' : '#888';
+      hsCtx.textAlign = 'left';
+      hsCtx.fillText(`${(i + 1).toString().padStart(2, ' ')}.`, 20, y);
+      hsCtx.fillText(entry[0], 60, y);
+      hsCtx.textAlign = 'right';
+      hsCtx.fillText(entry[1], 236, y);
+    });
+
+    const hsTexture = new THREE.CanvasTexture(hsCanvas);
+    const hsBoard = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.2, 1.8),
+      new THREE.MeshStandardMaterial({ map: hsTexture, emissive: 0xffffff, emissiveMap: hsTexture, emissiveIntensity: 0.2 })
+    );
+    hsBoard.position.set(7.94, 3.5, -3);
+    hsBoard.rotation.y = -Math.PI / 2;
+    this.scene.add(hsBoard);
+
+    // More retro posters
+    this._addPoster(-7.94, 3.5, 2, Math.PI / 2, '#9b59b6', 'PRESS\nSTART');
+    this._addPoster(7.94, 3.5, 2, -Math.PI / 2, '#1abc9c', 'LEVEL\nUP!');
+    this._addPoster(-3, 5.0, -7.94, 0, '#e67e22', '1UP');
+    this._addPoster(3, 5.0, -7.94, 0, '#27ae60', 'READY?');
+
+    // === FLOOR CABLES from machines ===
+    const cableMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+    for (const machine of this.machines) {
+      const pos = machine.group.position;
+      // Cable running from machine to nearest wall
+      const cableLength = 8 - Math.abs(pos.z);
+      if (cableLength > 1) {
+        const cable = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.02, 0.02, cableLength, 4),
+          cableMat
+        );
+        cable.position.set(pos.x + 0.3, 0.01, pos.z - cableLength / 2);
+        cable.rotation.x = Math.PI / 2;
+        this.scene.add(cable);
+      }
+    }
   }
 
   _addPoster(x, y, z, rotY, color, text) {
@@ -564,6 +668,21 @@ export class ArcadeRoom {
     }
   }
 
+  update(dt) {
+    this._animTime = (this._animTime || 0) + dt;
+    const t = this._animTime;
+
+    // Pulsing ARCADE sign
+    if (this._arcadeSignMat) {
+      this._arcadeSignMat.emissiveIntensity = 0.3 + Math.sin(t * 2) * 0.15;
+    }
+
+    // Animate ceiling fan if loaded
+    if (this._ceilingFan) {
+      this._ceilingFan.rotation.y += dt * 1.5;
+    }
+  }
+
   getMachineFromIntersect(intersect) {
     let obj = intersect.object;
     while (obj) {
@@ -598,14 +717,9 @@ export class ArcadeRoom {
   async _placeModels() {
     const s = this.scene;
 
-    // === VENDING MACHINE — left wall, near coin change machine ===
+    // === VENDING MACHINE — left wall ===
     placeModel(s, M + 'vending-machine.glb', {
-      position: [-7, 0, 0], rotation: [0, Math.PI / 2, 0], scale: 1.2,
-    });
-
-    // === SOFA — right wall, chill area ===
-    placeModel(s, M + 'sofa.glb', {
-      position: [7, 0, 2], rotation: [0, -Math.PI / 2, 0], scale: 1.5,
+      position: [-7, 0, 0], rotation: [0, Math.PI / 2, 0], scale: 0.7,
     });
 
     // === TROPHY on counter ===
@@ -623,14 +737,14 @@ export class ArcadeRoom {
 
     // === KENNEY FURNITURE ===
 
-    // Lounge sofa — waiting area near entrance
+    // Lounge sofa — waiting area near entrance, against left wall
     placeModel(s, K + 'loungeSofa.glb', {
-      position: [-6, 0, 5], rotation: [0, Math.PI / 2, 0], scale: 2.0,
+      position: [-7, 0, 5.5], rotation: [0, Math.PI / 2, 0], scale: 2.0,
     });
 
     // Coffee table in front of lounge sofa
     placeModel(s, K + 'tableCoffee.glb', {
-      position: [-5, 0, 5], scale: 2.0,
+      position: [-5.5, 0, 5.5], scale: 2.0,
     });
 
     // Potted plant near entrance
@@ -685,7 +799,7 @@ export class ArcadeRoom {
     // Ceiling fan
     placeModel(s, K + 'ceilingFan.glb', {
       position: [0, 5.8, 0], scale: 3.0,
-    });
+    }).then(model => { if (model) this._ceilingFan = model; });
 
     // Radio on counter
     placeModel(s, K + 'radio.glb', {
@@ -699,12 +813,12 @@ export class ArcadeRoom {
 
     // Pillows on sofa area
     placeModel(s, K + 'pillow.glb', {
-      position: [-6, 0.6, 5.2], rotation: [0, 0.3, 0], scale: 2.0,
+      position: [-7, 0.6, 5.7], rotation: [0, 0.3, 0], scale: 2.0,
     });
 
     // Lamp next to sofa
     placeModel(s, K + 'lampRoundFloor.glb', {
-      position: [-6, 0, 3.5], scale: 2.5,
+      position: [-7, 0, 4], scale: 2.5,
     });
 
     // Second plant — right wall corner
@@ -713,5 +827,21 @@ export class ArcadeRoom {
     });
 
     console.log('[arcade] Loading 3D models...');
+  }
+
+  _addScreenGlows() {
+    const screenColors = [0x00fff5, 0xff00ff, 0x00ff88, 0xffff00, 0xff4444, 0x4488ff];
+    for (let i = 0; i < this.machines.length; i++) {
+      const machine = this.machines[i];
+      const pos = machine.group.position;
+      const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), machine.group.rotation.y);
+      const glowLight = new THREE.PointLight(screenColors[i % screenColors.length], 0.4, 4);
+      glowLight.position.set(
+        pos.x + forward.x * 1.0,
+        1.5,
+        pos.z + forward.z * 1.0
+      );
+      this.scene.add(glowLight);
+    }
   }
 }

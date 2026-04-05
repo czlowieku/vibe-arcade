@@ -9,6 +9,7 @@ import { NpcManager } from './npc-manager.js';
 import { loadState, saveState, getApiKey } from './storage.js';
 import { getStarterPack, getCardById, CARDS } from './card-system.js';
 import { Exterior } from './exterior.js';
+import { setupPostProcessing, createDustParticles } from './effects.js';
 
 // --- Prompt Panel ---
 let pendingRecipe = null;
@@ -113,11 +114,12 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 0.9;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-// Sky blue background
+scene.background = new THREE.Color(0x0a0a15);
+scene.fog = new THREE.FogExp2(0x0a0a15, 0.035);
+// Dark atmospheric background
 
 // Perspective camera — better for raycasting and more immersive
 const aspect = window.innerWidth / window.innerHeight;
@@ -127,6 +129,10 @@ const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
 const cameraCtrl = new CameraController(camera);
 const arcadeRoom = new ArcadeRoom(scene);
 const exterior = new Exterior(scene);
+
+// --- Post-processing ---
+const { composer } = setupPostProcessing(renderer, scene, camera);
+const dust = createDustParticles(scene);
 
 // --- Game Manager ---
 const gameManager = new GameManager(gameState, save);
@@ -809,6 +815,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // --- Render Loop ---
@@ -822,9 +829,11 @@ function animate() {
   cameraCtrl.update();
   gameManager.updateMachineTexture();
   npcManager.update(dt);
+  arcadeRoom.update(dt);
   hud.updateNpcDisplay(reputation.getReputation(), npcManager.getNpcCount());
 
-  renderer.render(scene, camera);
+  dust.update(dt);
+  composer.render();
 }
 
 animate();
