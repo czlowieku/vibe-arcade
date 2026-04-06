@@ -275,7 +275,7 @@ class LegendaryPowerup {
 }
 `
   },
-  aiContext: 'PowerupSystem spawns, tracks, and manages collectible power-ups. Types: speed boost, shield, double points, magnet, shrink. collect(entity) checks collision and activates. isActive(effectId) checks if an effect is running. getMultiplier(effectId) returns 2x if active. drawAvailable renders floating pickups. drawActive shows active effect timers. drawShieldEffect renders a visual shield on an entity.',
+  aiContext: 'PowerupSystem spawns, tracks, and manages collectible power-ups. Built-in types: speed, shield, double, magnet, shrink — but you can add your own via addType(id, color, icon, duration). collect(entity) checks collision and activates. isActive(effectId) / getMultiplier(effectId) for checking status. drawAvailable renders floating pickups, drawActive shows timers. BE CREATIVE — add power-ups that make sense for this specific game genre. A shooter might add homing bullets or rapid fire, a platformer might add wall jump or coin magnet. Surprise the player!',
   provides: ['PowerupSystem', 'drawShieldEffect'],
   requires: [],
   conflicts: [],

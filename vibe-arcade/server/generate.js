@@ -1,6 +1,26 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { sanitizeGameCode } from './sanitize.js';
 import { log, addLogUpdate } from './logger.js';
+
+// Remove a "class Name {..}" or "function Name(...) {..}" block using brace-counting
+// searchFrom: start searching from this index (to skip the first occurrence)
+function stripBlock(code, pattern, searchFrom = 0) {
+  const idx = code.indexOf(pattern, searchFrom);
+  if (idx === -1) return code;
+  const braceStart = code.indexOf('{', idx);
+  if (braceStart === -1) return code;
+  let depth = 1;
+  let i = braceStart + 1;
+  while (i < code.length && depth > 0) {
+    if (code[i] === '{') depth++;
+    if (code[i] === '}') depth--;
+    i++;
+  }
+  let lineStart = code.lastIndexOf('\n', idx);
+  if (lineStart === -1) lineStart = 0; else lineStart++;
+  return code.slice(0, lineStart) + code.slice(i);
+}
 
 const GENRE_DESCRIPTIONS = {
   platformer: 'A side-scrolling platformer where the player jumps between platforms, avoids hazards, and collects items. Player moves left/right and jumps.',
@@ -23,7 +43,7 @@ const MODIFIER_DESCRIPTIONS = {
   'gravity-flip': 'Include a gravity flip mechanic — pressing a key (Space or G) reverses gravity direction. Player falls upward or downward.',
   'time-limit': 'Strict 60-second time limit. Show a visible countdown timer. Game ends when time runs out. Score as much as possible before then.',
   boss: 'Include a boss enemy that appears after 30 seconds of play. Boss has health bar, attack patterns, and must be defeated to win.',
-  powerups: 'Spawn random power-ups: speed boost (blue), shield (green), double points (gold), size change (purple). Each lasts 5 seconds.',
+  powerups: 'Add a power-up system that fits the game genre. Spawn collectible power-ups periodically — design 3-5 creative power-ups that make sense for this specific game (e.g. a shooter might have rapid fire, homing bullets, or a shield; a platformer might have double jump, magnet coins, or invincibility). Each power-up should have a distinct color/icon, last 5-8 seconds, and visually show when active. Be creative — surprise the player with fun combinations.',
 };
 
 function buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions) {
@@ -34,42 +54,36 @@ function buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructi
     modifierSection = `\nSpecial Modifier: ${modifier}\n${MODIFIER_DESCRIPTIONS[modifier]}`;
   }
 
-  return `You are assembling a mini-game from pre-built code modules. USE the provided functions — do NOT rewrite them.
+  return `Create a complete, playable Canvas2D mini-game by combining the provided utility modules with a game loop.
 
-=== PROVIDED CODE (include this verbatim at the top of your output) ===
-${mergedCode}
-
-=== SCAFFOLD (use this as your startGame template) ===
-${scaffold || '// No scaffold — create a startGame(canvas, onScore, onGameOver) function using the provided utilities.'}
-
-=== MODULE GUIDE ===
-${aiContext}
-
-=== ASSEMBLY INSTRUCTIONS ===
+=== GAME SPEC ===
 Genre: ${genre} — ${GENRE_DESCRIPTIONS[genre] || genre}
 Visual Theme: ${theme} — ${THEME_DESCRIPTIONS[theme] || theme}
 ${modifierSection}
-${extraInstructions ? `\nADDITIONAL PLAYER INSTRUCTIONS:\n${extraInstructions}\n` : ''}
+${extraInstructions ? `\nExtra instructions: ${extraInstructions}\n` : ''}
 
-CRITICAL ASSEMBLY RULES:
-1. Start your output with ALL the provided utility code (classes, functions, constants)
-2. Then write a startGame(canvas, onScore, onGameOver) function that USES these utilities
-3. If a scaffold is provided, use it as your starting point and flesh it out
-4. Call the utility classes and functions — do NOT reimplement them
-5. The theme module provides drawing helpers — use them for ALL visual rendering
-6. The modifier module provides game mechanic systems — integrate them into the game loop
-7. canvas is 800x600, use Canvas2D unless an engine module is present
-8. Support arrow keys AND WASD for movement, Space for action
-9. onScore(points) when player scores, onGameOver(finalScore) when game ends
-10. Game should be fun and last 30-90 seconds
-11. Include a visible score display
+=== UTILITY MODULES (include these at the top of your output, then use them) ===
+${mergedCode}
 
-CRITICAL Canvas2D rules (if no engine module):
-- For gradients use ctx.createLinearGradient() NOT CSS strings
-- fillStyle only accepts color strings or CanvasGradient objects
-- Always clear/fill the canvas each frame
+=== HOW TO USE THEM ===
+${aiContext}
 
-Return ONLY the JavaScript code. No markdown code fences, no explanation.`;
+${scaffold ? `=== GAME SCAFFOLD (fill this in as your startGame) ===\n${scaffold}\n` : ''}
+
+=== WHAT TO OUTPUT ===
+Output a COMPLETE JavaScript file with this structure:
+1. First: paste ALL the utility code from above (classes, functions, constants) exactly as-is
+2. Then: write a function startGame(canvas, onScore, onGameOver) that uses those utilities
+   - canvas is 800x600 HTMLCanvasElement, use canvas.getContext('2d')
+   - requestAnimationFrame game loop
+   - Arrow keys + WASD + Space for input
+   - onScore(points) on scoring, onGameOver(finalScore) on game end
+   - Fun gameplay lasting 30-90 seconds with visible score
+   - Dark background, clear canvas each frame
+   - For gradients: ctx.createLinearGradient(), NOT CSS strings
+   - Skip title screen — gameplay starts immediately
+
+Return ONLY JavaScript code. No markdown fences, no explanation.`;
 }
 
 function buildPrompt(genre, theme, modifier, cardLevels, extraInstructions) {
@@ -119,13 +133,66 @@ Return ONLY the JavaScript code. No markdown code fences, no explanation.
 The code must be a complete, self-contained script that defines startGame at the top level.`;
 }
 
+// Streaming via Anthropic Claude
+async function streamAnthropic(prompt, apiKey, res, logEntry) {
+  const client = new Anthropic({ apiKey });
+  let fullCode = '';
+
+  const stream = await client.messages.stream({
+    model: 'claude-opus-4-20250514',
+    max_tokens: 16000,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta?.text) {
+      fullCode += event.delta.text;
+      res.write(`data: ${JSON.stringify({ type: 'chunk', text: event.delta.text })}\n\n`);
+    }
+  }
+
+  return fullCode;
+}
+
+// Streaming via Google Gemini
+async function streamGemini(prompt, apiKey, res, logEntry) {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.1-pro-preview' });
+  let fullCode = '';
+
+  const result = await model.generateContentStream({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      maxOutputTokens: 16000,
+      temperature: 1,
+      thinkingConfig: { thinkingBudget: 8000 },
+    },
+  });
+
+  for await (const chunk of result.stream) {
+    // Only take text parts, skip thinking parts
+    const candidates = chunk.candidates;
+    if (!candidates || !candidates[0]?.content?.parts) continue;
+    for (const part of candidates[0].content.parts) {
+      if (part.thought) continue; // skip thinking
+      if (part.text) {
+        fullCode += part.text;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: part.text })}\n\n`);
+      }
+    }
+  }
+
+  return fullCode;
+}
+
 // Streaming version — sends SSE events as code is generated
-export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res, codeBundle) {
+export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res, codeBundle, provider) {
   const prompt = codeBundle
     ? buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions)
     : buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
 
-  const client = new Anthropic({ apiKey });
+  const isGemini = provider === 'gemini';
+  const modelName = isGemini ? 'gemini-3.1-pro-preview' : 'claude-opus-4-20250514';
 
   const logEntry = {
     type: 'game', genre, theme, modifier, status: 'generating',
@@ -133,7 +200,7 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
     startTime: Date.now(),
     prompt: prompt,
     promptLength: prompt.length,
-    model: 'claude-opus-4-20250514',
+    model: modelName,
     response: '',
   };
   log(logEntry);
@@ -147,30 +214,97 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   let fullCode = '';
 
   try {
-    const stream = await client.messages.stream({
-      model: 'claude-opus-4-20250514',
-      max_tokens: 12000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta?.text) {
-        fullCode += event.delta.text;
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: event.delta.text })}\n\n`);
-      }
-    }
+    fullCode = isGemini
+      ? await streamGemini(prompt, apiKey, res, logEntry)
+      : await streamAnthropic(prompt, apiKey, res, logEntry);
   } catch (err) {
     addLogUpdate(logEntry.id, { status: 'error', error: err.message, duration: Date.now() - logEntry.startTime });
     throw err;
   }
 
-  // Strip markdown fences
-  fullCode = fullCode.replace(/^```(?:javascript|js)?\n?/m, '').replace(/\n?```$/m, '');
+  // Strip thinking tags, markdown fences, and any non-code text
+  fullCode = fullCode.replace(/<think>[\s\S]*?<\/think>/g, '');
+  fullCode = fullCode.replace(/\[thinking\][\s\S]*?\[\/thinking\]/g, '');
+  // Extract code from markdown fence if present
+  const fenceMatch = fullCode.match(/```(?:javascript|js)?\n([\s\S]*?)```/);
+  if (fenceMatch) {
+    fullCode = fenceMatch[1];
+  } else {
+    // Strip any leading/trailing fences
+    fullCode = fullCode.replace(/^```(?:javascript|js)?\n?/gm, '').replace(/\n?```\s*$/gm, '');
+  }
+  // Strip any leading text before first function/const/let/var/class
+  const codeStart = fullCode.search(/^(function |const |let |var |class |\/\/|\/\*)/m);
+  if (codeStart > 0) {
+    fullCode = fullCode.slice(codeStart);
+  }
+  fullCode = fullCode.trim();
+
+  // Validate JS syntax before sending — try to auto-fix common issues
+  // NOTE: new Function() is intentionally used here to validate AI-generated game code syntax.
+  // This is the core mechanic of Vibe Arcade — AI generates game code that we execute.
+  // The code is already sanitized by sanitizeGameCode() to block dangerous patterns.
+  try {
+    new Function(fullCode); // eslint-disable-line no-new-func
+  } catch (syntaxErr) {
+    console.warn(`[syntax-fix] Generated code has error: ${syntaxErr.message}`);
+    // Try stripping everything after the last complete function/class closing brace
+    // Common issue: AI appends explanation text or incomplete code at the end
+    const lines = fullCode.split('\n');
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const trimmed = lines[i].trim();
+      if (trimmed === '}' || trimmed === '};') {
+        const candidate = lines.slice(0, i + 1).join('\n');
+        try {
+          new Function(candidate); // eslint-disable-line no-new-func
+          console.log(`[syntax-fix] Fixed by trimming after line ${i + 1}`);
+          fullCode = candidate;
+          break;
+        } catch (e) {
+          // keep trying earlier lines
+        }
+      }
+    }
+  }
+
   fullCode = sanitizeGameCode(fullCode);
+
+  const hasStartGame = fullCode.includes('function startGame') || fullCode.includes('startGame =');
+  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${hasStartGame}`);
+
+  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${hasStartGame} | syntax: ${syntaxOk}`);
+  if (!hasStartGame) {
+    console.warn('[pipeline] AI output start:', fullCode.slice(0, 500));
+  }
+
+  // If code is broken, retry once without module assembly (plain generation)
+  if (!hasStartGame || !syntaxOk) {
+    console.log('[pipeline] Code broken — retrying with plain generation...');
+    const retryPrompt = buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
+    let retryCode = '';
+    try {
+      retryCode = isGemini
+        ? await streamGemini(retryPrompt, apiKey, res, logEntry)
+        : await streamAnthropic(retryPrompt, apiKey, res, logEntry);
+      retryCode = retryCode.replace(/<think>[\s\S]*?<\/think>/g, '');
+      const retryFence = retryCode.match(/```(?:javascript|js)?\n([\s\S]*?)```/);
+      if (retryFence) retryCode = retryFence[1];
+      else retryCode = retryCode.replace(/^```(?:javascript|js)?\n?/gm, '').replace(/\n?```\s*$/gm, '');
+      const retryStart = retryCode.search(/^(function |const |let |var |class |\/\/|\/\*)/m);
+      if (retryStart > 0) retryCode = retryCode.slice(retryStart);
+      retryCode = retryCode.trim();
+      retryCode = sanitizeGameCode(retryCode);
+      if (retryCode.includes('function startGame') || retryCode.includes('startGame =')) {
+        console.log('[pipeline] Retry succeeded!');
+        fullCode = retryCode;
+      }
+    } catch (retryErr) {
+      console.warn('[pipeline] Retry also failed:', retryErr.message);
+    }
+  }
 
   const title = `${theme.toUpperCase()} ${genre.toUpperCase()}${modifier ? ' + ' + modifier.toUpperCase() : ''}`;
 
-  // Send final complete event
   const result = {
     type: 'done',
     gameCode: fullCode,
@@ -180,7 +314,7 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   res.write(`data: ${JSON.stringify(result)}\n\n`);
   res.end();
 
-  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length, response: fullCode.slice(0, 5000) });
+  addLogUpdate(logEntry.id, { status: 'done', duration: Date.now() - logEntry.startTime, title: result.title, codeLength: result.gameCode?.length, response: fullCode });
 
   return result;
 }
