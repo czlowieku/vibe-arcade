@@ -30,11 +30,16 @@ const WAYPOINTS = {
   DOOR: new THREE.Vector3(0, 0, 8),
   ENTRY: new THREE.Vector3(0, 0, 6),
   BROWSE: [
-    new THREE.Vector3(-3, 0, 2),
-    new THREE.Vector3(3, 0, 2),
+    new THREE.Vector3(-4, 0, 2),
+    new THREE.Vector3(4, 0, 2),
     new THREE.Vector3(0, 0, 0),
     new THREE.Vector3(-2, 0, 4),
     new THREE.Vector3(2, 0, 4),
+    new THREE.Vector3(-5, 0, 0),
+    new THREE.Vector3(5, 0, 0),
+    new THREE.Vector3(0, 0, 3),
+    new THREE.Vector3(-3, 0, -1),
+    new THREE.Vector3(3, 0, -1),
   ],
 };
 
@@ -96,9 +101,14 @@ export class NpcManager {
 
   _spawnSingle() {
     const spawnX = -2 + Math.random() * 4;
+    const offsetX = (Math.random() - 0.5) * 2; // spread out through doorway
     const pos = new THREE.Vector3(spawnX, 0, 13);
     const npc = new NPC(nextNpcId++, pos, this._randomPersonality());
-    npc.walkQueue = [new THREE.Vector3(spawnX, 0, 13), WAYPOINTS.DOOR.clone(), WAYPOINTS.ENTRY.clone()];
+    npc.walkQueue = [
+      new THREE.Vector3(spawnX, 0, 13),
+      new THREE.Vector3(offsetX, 0, 8),
+      new THREE.Vector3(offsetX, 0, 6),
+    ];
     this.npcs.push(npc);
     this.scene.add(npc.group);
   }
@@ -107,12 +117,12 @@ export class NpcManager {
     const baseX = -1 + Math.random() * 2;
     const id1 = nextNpcId++;
     const id2 = nextNpcId++;
-    const pos1 = new THREE.Vector3(baseX - 0.4, 0, 13);
-    const pos2 = new THREE.Vector3(baseX + 0.4, 0, 13);
+    const pos1 = new THREE.Vector3(baseX - 0.5, 0, 13);
+    const pos2 = new THREE.Vector3(baseX + 0.5, 0, 13);
     const npc1 = new NPC(id1, pos1, this._randomPersonality(), id2);
     const npc2 = new NPC(id2, pos2, this._randomPersonality(), id1);
-    npc1.walkQueue = [pos1.clone(), WAYPOINTS.DOOR.clone().add(new THREE.Vector3(-0.4, 0, 0)), WAYPOINTS.ENTRY.clone().add(new THREE.Vector3(-0.4, 0, 0))];
-    npc2.walkQueue = [pos2.clone(), WAYPOINTS.DOOR.clone().add(new THREE.Vector3(0.4, 0, 0)), WAYPOINTS.ENTRY.clone().add(new THREE.Vector3(0.4, 0, 0))];
+    npc1.walkQueue = [pos1.clone(), new THREE.Vector3(-0.7, 0, 8), new THREE.Vector3(-0.7, 0, 6)];
+    npc2.walkQueue = [pos2.clone(), new THREE.Vector3(0.7, 0, 8), new THREE.Vector3(0.7, 0, 6)];
     this.npcs.push(npc1, npc2);
     this.scene.add(npc1.group);
     this.scene.add(npc2.group);
@@ -122,7 +132,7 @@ export class NpcManager {
     switch (npc.state) {
       case STATES.SPAWNING:
       case STATES.ENTERING:
-        if (npc.moveToward(dt)) {
+        if (npc.moveToward(dt, this.npcs)) {
           npc.state = STATES.BROWSING;
           npc.browseCount = 0;
           this._addBrowseTarget(npc);
@@ -130,7 +140,7 @@ export class NpcManager {
         break;
 
       case STATES.BROWSING:
-        if (npc.moveToward(dt)) {
+        if (npc.moveToward(dt, this.npcs)) {
           npc.browseCount++;
           if (npc.browseCount >= 1 + Math.floor(Math.random() * 2)) {
             npc.state = STATES.CHOOSING;
@@ -145,7 +155,7 @@ export class NpcManager {
         break;
 
       case STATES.WALKING_TO_MACHINE:
-        if (npc.moveToward(dt)) {
+        if (npc.moveToward(dt, this.npcs)) {
           const machine = npc.targetMachine;
           if (!machine) { this._startLeaving(npc); break; }
           if (machine.npcOccupant && machine.npcOccupant !== npc) {
@@ -257,14 +267,14 @@ export class NpcManager {
         break;
 
       case STATES.LEAVING:
-        if (npc.moveToward(dt)) {
+        if (npc.moveToward(dt, this.npcs)) {
           npc.state = STATES.DESPAWNING;
           npc.walkQueue = [new THREE.Vector3(npc.group.position.x, 0, 16)];
         }
         break;
 
       case STATES.DESPAWNING:
-        if (npc.moveToward(dt)) {
+        if (npc.moveToward(dt, this.npcs)) {
           npc.dead = true;
         }
         break;
@@ -638,14 +648,22 @@ export class NpcManager {
   _startLeaving(npc) {
     npc.state = STATES.LEAVING;
     npc.targetMachine = null;
-    npc.walkQueue = [WAYPOINTS.ENTRY.clone(), WAYPOINTS.DOOR.clone()];
+    const exitX = (Math.random() - 0.5) * 2; // spread through doorway
+    npc.walkQueue = [
+      new THREE.Vector3(exitX, 0, 6),
+      new THREE.Vector3(exitX, 0, 8),
+    ];
 
     if (npc.partnerId) {
       const partner = this.npcs.find(n => n.id === npc.partnerId);
       if (partner && partner.state !== STATES.LEAVING && partner.state !== STATES.DESPAWNING && partner.state !== STATES.PLAYING) {
         partner.state = STATES.LEAVING;
         partner.targetMachine = null;
-        partner.walkQueue = [WAYPOINTS.ENTRY.clone().add(new THREE.Vector3(0.4, 0, 0)), WAYPOINTS.DOOR.clone().add(new THREE.Vector3(0.4, 0, 0))];
+        const partnerX = exitX + 0.8;
+        partner.walkQueue = [
+          new THREE.Vector3(partnerX, 0, 6),
+          new THREE.Vector3(partnerX, 0, 8),
+        ];
       }
     }
   }
