@@ -53,15 +53,8 @@ export function createPlayerCard(cardId) {
 }
 
 export function getStarterPack() {
-  // 1 random genre, 1 random theme, 1 random modifier
-  const genre = CARDS.genre[Math.floor(Math.random() * CARDS.genre.length)];
-  const theme = CARDS.theme[Math.floor(Math.random() * CARDS.theme.length)];
-  const modifier = CARDS.modifier[Math.floor(Math.random() * CARDS.modifier.length)];
-  return [
-    createPlayerCard(genre.id),
-    createPlayerCard(theme.id),
-    createPlayerCard(modifier.id),
-  ];
+  // All cards unlocked from the start
+  return ALL_CARDS.map(c => createPlayerCard(c.id));
 }
 
 export function generateCardPack() {
