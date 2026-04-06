@@ -185,7 +185,9 @@ export class NpcManager {
         if (npc.stateTimer <= 0) {
           npc.targetMachine = null;
           if (Math.random() < 0.4) {
-            npc.state = STATES.CHOOSING;
+            // Browse somewhere else, don't immediately pick another machine
+            npc.state = STATES.BROWSING;
+            this._addBrowseTarget(npc);
           } else {
             this._startLeaving(npc);
           }
@@ -212,11 +214,15 @@ export class NpcManager {
           const machine = npc.targetMachine;
           if (machine && !machine.npcOccupant && machine.state === 'ready') {
             this._startPlaying(npc, machine);
-          } else if (npc.partnerId) {
-            npc.state = STATES.WAITING;
-            npc.stateTimer = 5;
           } else {
-            npc.state = STATES.CHOOSING;
+            // Done watching — move on (browse or leave, don't loop back to same machine)
+            npc.targetMachine = null;
+            if (Math.random() < 0.3) {
+              this._startLeaving(npc);
+            } else {
+              npc.state = STATES.BROWSING;
+              this._addBrowseTarget(npc);
+            }
           }
         }
         break;
@@ -415,6 +421,11 @@ export class NpcManager {
     this.gameState.coins += coins;
     this.gameState.totalNpcCoinsEarned = (this.gameState.totalNpcCoinsEarned || 0) + coins;
     this.save();
+
+    // Notify coin earned
+    if (coins > 0 && this.onCoinsEarned) {
+      this.onCoinsEarned(machine, coins);
+    }
 
     // Record to history
     const genre = saved?.genre || saved?.recipe?.genre || 'platformer';
