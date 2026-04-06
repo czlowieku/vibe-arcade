@@ -418,7 +418,75 @@ body {
 #modify-current-title {
   color: #666;
   font-size: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+#modify-current-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+#modify-current-cards .card {
+  position: relative;
+  cursor: default;
+}
+
+#modify-current-cards .card-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1;
+}
+
+#modify-current-cards .card-remove:hover {
+  background: #c0392b;
+}
+
+#modify-add-cards {
+  margin-bottom: 12px;
+}
+
+#modify-add-label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#modify-card-picker {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+#modify-card-picker .card {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.15s;
+}
+
+#modify-card-picker .card:hover {
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 #modify-instructions {
@@ -714,18 +782,67 @@ body {
   line-height: 1.5;
 }
 
-#api-key-input {
+#provider-toggle {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.provider-btn {
+  padding: 10px 24px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #888;
+}
+
+.provider-btn.active {
+  border-color: #2c3e50;
+  background: #2c3e50;
+  color: white;
+}
+
+.provider-btn:hover:not(.active) {
+  border-color: #aaa;
+}
+
+#anthropic-key-section,
+#gemini-key-section {
+  margin-bottom: 12px;
+}
+
+#anthropic-key-section label,
+#gemini-key-section label {
+  display: block;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#api-key-input,
+#gemini-key-input {
   width: 100%;
   padding: 12px 16px;
   border: 2px solid #ddd;
   border-radius: 8px;
   font-family: 'Courier New', monospace;
   font-size: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   transition: border-color 0.2s;
 }
 
-#api-key-input:focus {
+#api-key-input:focus,
+#gemini-key-input:focus {
   outline: none;
   border-color: #2c3e50;
   box-shadow: 0 0 0 3px rgba(44,62,80,0.1);

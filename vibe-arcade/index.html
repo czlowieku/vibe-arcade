@@ -77,7 +77,12 @@
       <div id="modify-panel-inner">
         <h2>✏️ MODIFY GAME</h2>
         <p id="modify-current-title"></p>
-        <textarea id="modify-instructions" rows="4" placeholder="e.g. 'make it faster' or 'add a boss enemy' or 'change colors to red and blue'..."></textarea>
+        <div id="modify-current-cards"></div>
+        <div id="modify-add-cards">
+          <div id="modify-add-label">+ Add card:</div>
+          <div id="modify-card-picker"></div>
+        </div>
+        <textarea id="modify-instructions" rows="3" placeholder="e.g. 'make it faster' or 'add a boss enemy'..."></textarea>
         <div id="modify-actions">
           <button id="btn-do-modify">⚡ REGENERATE</button>
           <button id="btn-modify-cancel">← CANCEL</button>
@@ -119,9 +124,20 @@
     <!-- API Key Settings Panel -->
     <div id="api-key-panel" class="hidden">
       <div id="api-key-panel-inner">
-        <h2>🔑 API KEY</h2>
-        <p>Enter your Anthropic API key to generate games. Your key is stored locally in your browser and sent to the server only for generation requests.</p>
-        <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" />
+        <h2>🔑 API SETTINGS</h2>
+        <p>Choose your AI provider and enter the API key. Keys are stored locally.</p>
+        <div id="provider-toggle">
+          <button class="provider-btn active" data-provider="anthropic">Anthropic</button>
+          <button class="provider-btn" data-provider="gemini">Google Gemini</button>
+        </div>
+        <div id="anthropic-key-section">
+          <label>Anthropic API Key</label>
+          <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" />
+        </div>
+        <div id="gemini-key-section">
+          <label>Gemini API Key</label>
+          <input type="password" id="gemini-key-input" placeholder="AIza..." autocomplete="off" />
+        </div>
         <div id="api-key-actions">
           <button id="btn-save-key">💾 SAVE</button>
           <button id="btn-cancel-key">✕ CANCEL</button>

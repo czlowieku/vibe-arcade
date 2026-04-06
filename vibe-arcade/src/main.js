@@ -339,7 +339,7 @@ hud.onNewGame = () => {
 };
 
 hud.onModifyGame = () => {
-  // Modify existing game — show modify panel
+  // Modify existing game — show modify panel with current cards
   if (gameManager.currentMachine?.state === 'playing') {
     gameManager.stopGame();
   }
@@ -348,6 +348,80 @@ hud.onModifyGame = () => {
     document.getElementById('modify-current-title').textContent =
       'Current game: ' + (machine.gameTitle || 'Mini Game');
     document.getElementById('modify-instructions').value = '';
+
+    // Show current recipe cards with remove buttons
+    const cardsContainer = document.getElementById('modify-current-cards');
+    cardsContainer.replaceChildren();
+    const saved = gameState.machines[machine.index];
+    const recipe = saved?.recipe || {};
+    const currentCardIds = [];
+
+    for (const [id, stars] of [
+      [recipe.genre, recipe.cardLevels?.genre || 1],
+      [recipe.theme, recipe.cardLevels?.theme || 1],
+      [recipe.modifier, recipe.cardLevels?.modifier || 1],
+    ]) {
+      if (!id) continue;
+      const el = _buildMiniCard(id, stars);
+      if (!el) continue;
+      currentCardIds.push(id);
+      // Add remove button (except genre — always need one)
+      const card = getCardById(id);
+      if (card && card.category !== 'genre') {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'card-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          if (card.category === 'theme') recipe.theme = null;
+          if (card.category === 'modifier') recipe.modifier = null;
+          if (saved) saved.recipe = recipe;
+          save();
+          hud.onModifyGame(); // re-render
+        });
+        el.style.position = 'relative';
+        el.appendChild(removeBtn);
+      }
+      cardsContainer.appendChild(el);
+    }
+
+    // Added cards
+    if (saved?.addedCards) {
+      for (const ac of saved.addedCards) {
+        currentCardIds.push(ac.cardId);
+        const el = _buildMiniCard(ac.cardId, ac.stars);
+        if (!el) continue;
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'card-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          saved.addedCards = saved.addedCards.filter(c => c.cardId !== ac.cardId);
+          save();
+          hud.onModifyGame();
+        });
+        el.style.position = 'relative';
+        el.appendChild(removeBtn);
+        cardsContainer.appendChild(el);
+      }
+    }
+
+    // Card picker — show cards not already on this machine
+    const picker = document.getElementById('modify-card-picker');
+    picker.replaceChildren();
+    for (const pc of gameState.cards) {
+      if (currentCardIds.includes(pc.cardId)) continue;
+      const card = getCardById(pc.cardId);
+      if (!card) continue;
+      const el = _buildMiniCard(pc.cardId, pc.stars);
+      if (!el) continue;
+      el.addEventListener('click', () => {
+        if (!saved.addedCards) saved.addedCards = [];
+        saved.addedCards.push({ cardId: pc.cardId, stars: pc.stars });
+        save();
+        hud.onModifyGame(); // re-render
+      });
+      picker.appendChild(el);
+    }
+
     document.getElementById('modify-panel').classList.remove('hidden');
   }
 };
@@ -393,17 +467,31 @@ hud.onKickNpc = () => {
 document.getElementById('btn-do-modify').addEventListener('click', () => {
   const machine = activeMachine || cameraCtrl.zoomedMachine;
   const instructions = document.getElementById('modify-instructions').value.trim();
-  if (!machine || !instructions) return;
+  if (!machine) return;
+
+  // Build card change context
+  const saved = gameState.machines[machine.index];
+  const addedCards = saved?.addedCards || [];
+  let cardChanges = '';
+  if (addedCards.length > 0) {
+    const cardDescs = addedCards.map(ac => {
+      const c = getCardById(ac.cardId);
+      return c ? `${c.name} (${c.category}): ${c.desc}` : null;
+    }).filter(Boolean);
+    if (cardDescs.length > 0) {
+      cardChanges = `\n\nCARD CHANGES — incorporate these into the game:\n${cardDescs.join('\n')}`;
+    }
+  }
+
+  if (!instructions && !cardChanges) return;
 
   document.getElementById('modify-panel').classList.add('hidden');
   hud.hideGameOver();
 
-  // Get saved machine data to know the original recipe
-  const saved = gameState.machines[machine.index];
   const suggestionsCtx = machine.suggestions && machine.suggestions.length > 0
     ? `\n\nAI REVIEWER SUGGESTIONS (from NPC play-testing):\n${machine.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nIncorporate these suggestions where they don't conflict with the player's request.`
     : '';
-  const extraContext = `The existing game code is:\n${machine.gameCode}\n\nPlayer wants these modifications: ${instructions}${suggestionsCtx}\n\nRewrite the entire game with these changes applied. Keep the same startGame(canvas, onScore, onGameOver) API.`;
+  const extraContext = `The existing game code is:\n${machine.gameCode}\n\n${instructions ? 'Player wants these modifications: ' + instructions : 'Regenerate with card changes.'}${cardChanges}${suggestionsCtx}\n\nRewrite the entire game with these changes applied. Keep the same startGame(canvas, onScore, onGameOver) API.`;
 
   // Regenerate with the existing game as context
   machine.state = 'generating';
