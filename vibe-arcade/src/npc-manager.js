@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NPC, STATES } from './npc.js';
 import { NpcGameRunner } from './npc-game-runner.js';
-import { getApiKey } from './storage.js';
+import { getActiveKey } from './storage.js';
 
 const COMMENTARY_GOOD = [
   'NAKURWIAM!!!',
@@ -511,7 +511,7 @@ export class NpcManager {
   }
 
   async _callReview(machine, gameScore, crashCount) {
-    const apiKey = getApiKey();
+    const apiKey = getActiveKey();
     if (!apiKey) { console.warn('[review] No API key set — skipping review'); return null; }
     if (!machine.gameCode) { console.warn('[review] No game code — skipping review'); return null; }
     console.log(`[review] Reviewing machine ${machine.index}, score: ${gameScore}`);
@@ -544,7 +544,7 @@ export class NpcManager {
   }
 
   _autoRegenerate(machine, recipe, feedback) {
-    const apiKey = getApiKey();
+    const apiKey = getActiveKey();
     if (!apiKey) return;
 
     const suggestions = machine.suggestions && machine.suggestions.length > 0
@@ -554,6 +554,20 @@ export class NpcManager {
 
     machine.state = 'generating';
     machine.streamedCode = '';
+    // Immediately show "generating" screen
+    if (machine.screenCtx) {
+      const ctx = machine.screenCtx;
+      ctx.fillStyle = '#0a0a1a';
+      ctx.fillRect(0, 0, 800, 600);
+      ctx.fillStyle = '#00fff5';
+      ctx.font = 'bold 18px Courier New';
+      ctx.textAlign = 'left';
+      ctx.fillText('AI IS CODING...', 20, 30);
+      ctx.fillStyle = '#333';
+      ctx.font = '13px Courier New';
+      ctx.fillText('Auto-regenerating broken game', 20, 55);
+      machine.screenTexture.needsUpdate = true;
+    }
 
     fetch('/api/generate', {
       method: 'POST',

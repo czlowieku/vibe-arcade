@@ -6,7 +6,7 @@ import { GameManager } from './game-manager.js';
 import { HUD } from './hud.js';
 import { Reputation } from './reputation.js';
 import { NpcManager } from './npc-manager.js';
-import { loadState, saveState, getApiKey } from './storage.js';
+import { loadState, saveState, getActiveKey } from './storage.js';
 import { getStarterPack, getCardById, CARDS } from './card-system.js';
 import { Exterior } from './exterior.js';
 import { setupPostProcessing, createDustParticles } from './effects.js';
@@ -496,6 +496,7 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
   // Regenerate with the existing game as context
   machine.state = 'generating';
   machine.streamedCode = '';
+  gameManager._drawStreamingScreen(machine, '');
 
   const modGenre = saved?.recipe?.genre || 'custom';
   const modTheme = saved?.recipe?.theme || 'custom';
@@ -510,7 +511,7 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
       modifier: modModifier,
       cardLevels: saved?.recipe?.cardLevels || { genre: 1, theme: 1, modifier: 0 },
       extraInstructions: extraContext,
-      apiKey: getApiKey(),
+      apiKey: getActiveKey(),
     }),
   }).then(async response => {
     const reader = response.body.getReader();
@@ -811,6 +812,7 @@ canvas.addEventListener('drop', (e) => {
   activeMachine = machine;
   machine.state = 'generating';
   machine.streamedCode = '';
+  gameManager._drawStreamingScreen(machine, '');
 
   fetch('/api/generate', {
     method: 'POST',
@@ -821,7 +823,7 @@ canvas.addEventListener('drop', (e) => {
       modifier: recipeModifier,
       cardLevels: saved?.recipe?.cardLevels || { genre: 1, theme: 1, modifier: 0 },
       extraInstructions: extraContext,
-      apiKey: getApiKey(),
+      apiKey: getActiveKey(),
     }),
   }).then(async response => {
     const reader = response.body.getReader();
