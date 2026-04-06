@@ -624,6 +624,11 @@ canvas.addEventListener('click', (event) => {
         cameraCtrl.zoomTo(machine);
         cardUI.hideCardBar();
         hud.showBackButton();
+        // Hide action buttons while generating — only BACK should be visible
+        document.getElementById('btn-modify-game').classList.add('hidden');
+        document.getElementById('btn-new-game').classList.add('hidden');
+        document.getElementById('btn-kick-npc').classList.add('hidden');
+        document.getElementById('btn-suggestions').classList.add('hidden');
         showMachineCards(machine);
       } else if (machine.state === 'occupied_npc') {
         activeMachine = machine;
@@ -787,6 +792,10 @@ function startPlaying(machine) {
 
 // Keyboard input forwarding
 document.addEventListener('keydown', (e) => {
+  // Don't intercept keys when typing in inputs/textareas
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
   if (e.key === 'Escape') {
     if (activeMachine && activeMachine.engine) {
       activeMachine.stopGame();
