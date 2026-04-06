@@ -48,7 +48,7 @@ export class NPC {
 
     this.group = new THREE.Group();
     this.group.position.copy(spawnPos);
-    this.group.scale.setScalar(1.1);
+    this.group.scale.setScalar(1.5);
 
     this.parts = {};
     this._buildModel();
@@ -79,9 +79,10 @@ export class NPC {
     const pantsColor = PANTS_COLORS[Math.floor(Math.random() * PANTS_COLORS.length)];
     const hatType = HAT_TYPES[Math.floor(Math.random() * HAT_TYPES.length)];
 
-    const skinMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.8 });
-    const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.7 });
-    const pantsMat = new THREE.MeshStandardMaterial({ color: pantsColor, roughness: 0.8 });
+    const skinMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.8, transparent: true });
+    const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.7, transparent: true });
+    const pantsMat = new THREE.MeshStandardMaterial({ color: pantsColor, roughness: 0.8, transparent: true });
+    this._allMats = [skinMat, shirtMat, pantsMat];
 
     // === HEAD (0.2 x 0.2 x 0.2) ===
     const headGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
@@ -266,6 +267,33 @@ export class NPC {
         this.emoticonSprite.material.dispose();
         this.emoticonSprite.material.map.dispose();
         this.emoticonSprite = null;
+      }
+    }
+  }
+
+  updateGhosting(allNpcs) {
+    // When close to another NPC, become semi-transparent (ghost through)
+    let minDist = Infinity;
+    const pos = this.group.position;
+    for (const other of allNpcs) {
+      if (other === this) continue;
+      const dx = pos.x - other.group.position.x;
+      const dz = pos.z - other.group.position.z;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      if (d < minDist) minDist = d;
+    }
+
+    // Fade to 0.4 opacity when overlapping, full opacity when > 1.5 apart
+    const ghostDist = 1.5;
+    const targetOpacity = minDist < ghostDist ? 0.4 + 0.6 * (minDist / ghostDist) : 1.0;
+
+    // Smooth transition
+    this._opacity = this._opacity || 1.0;
+    this._opacity += (targetOpacity - this._opacity) * 0.1;
+
+    if (this._allMats) {
+      for (const mat of this._allMats) {
+        mat.opacity = this._opacity;
       }
     }
   }
