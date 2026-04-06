@@ -224,10 +224,10 @@ export class CameraController {
     const screenPos = new THREE.Vector3();
     machine.screenMesh.getWorldPosition(screenPos);
 
-    // Get machine forward direction and place camera 2.5 units in front
+    // Get machine forward direction and place camera close to screen
     const forward = new THREE.Vector3(0, 0, 1);
     forward.applyQuaternion(machine.group.quaternion);
-    this.targetPosition.copy(screenPos).add(forward.multiplyScalar(2.5));
+    this.targetPosition.copy(screenPos).add(forward.multiplyScalar(1.8));
     this.targetPosition.y = screenPos.y;
     this.targetLookAt.copy(screenPos);
   }
