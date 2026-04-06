@@ -60,6 +60,27 @@ export class NpcManager {
   update(dt) {
     this._updateSpawner(dt);
     for (const npc of this.npcs) {
+      // Unstick NPCs — if walking state but empty queue, give them a target
+      if (npc.walkQueue.length === 0 && (
+        npc.state === STATES.SPAWNING || npc.state === STATES.ENTERING ||
+        npc.state === STATES.BROWSING || npc.state === STATES.WALKING_TO_MACHINE ||
+        npc.state === STATES.LEAVING || npc.state === STATES.DESPAWNING
+      )) {
+        npc._stuckTimer = (npc._stuckTimer || 0) + dt;
+        if (npc._stuckTimer > 2) {
+          // Stuck for 2 seconds, unstick
+          npc._stuckTimer = 0;
+          if (npc.state === STATES.LEAVING || npc.state === STATES.DESPAWNING) {
+            npc.dead = true;
+          } else {
+            npc.state = STATES.BROWSING;
+            this._addBrowseTarget(npc);
+          }
+        }
+      } else {
+        npc._stuckTimer = 0;
+      }
+
       this._updateNpc(npc, dt);
       npc.animate(dt);
     }
@@ -359,6 +380,13 @@ export class NpcManager {
     machine.npcOccupant = npc;
     machine.state = 'occupied_npc';
 
+    // NPC pays upfront to play
+    const coins = Math.floor(3 + npc.personality.generosity * 5);
+    this.gameState.coins += coins;
+    this.gameState.totalNpcCoinsEarned = (this.gameState.totalNpcCoinsEarned || 0) + coins;
+    this.save();
+    if (this.onCoinsEarned) this.onCoinsEarned(machine, coins);
+
     const dir = new THREE.Vector3().subVectors(machine.group.position, npc.group.position);
     dir.y = 0;
     if (dir.length() > 0.01) {
@@ -417,15 +445,7 @@ export class NpcManager {
 
     this.reputation.addRating(machine.index, rating);
 
-    const coins = this.reputation.calculatePayment(npc.personality.generosity, rating);
-    this.gameState.coins += coins;
-    this.gameState.totalNpcCoinsEarned = (this.gameState.totalNpcCoinsEarned || 0) + coins;
     this.save();
-
-    // Notify coin earned
-    if (coins > 0 && this.onCoinsEarned) {
-      this.onCoinsEarned(machine, coins);
-    }
 
     // Record to history
     const genre = saved?.genre || saved?.recipe?.genre || 'platformer';
