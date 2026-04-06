@@ -471,6 +471,7 @@ export class NpcManager {
     this.save();
 
     // --- Health tracking + periodic AI review ---
+    const AI_REVIEW_ENABLED = false; // flip to true to enable AI reviews
     const crashCount = npc._crashCount || 0;
     if (!machine._healthStats) machine._healthStats = { plays: 0, crashes: 0, zeroScores: 0, totalScore: 0, lastReviewAt: 0 };
     machine._healthStats.plays++;
@@ -487,7 +488,7 @@ export class NpcManager {
     const isSuspicious = stats.plays >= 3 && (stats.zeroScores >= 3 || stats.crashes >= 2);
     const isDueForReview = playsSinceReview >= 5;
 
-    if ((isSuspicious || isDueForReview) && !machine._reviewInProgress) {
+    if (AI_REVIEW_ENABLED && (isSuspicious || isDueForReview) && !machine._reviewInProgress) {
       machine._reviewInProgress = true;
       stats.lastReviewAt = stats.plays;
       console.log(`[review] Machine ${machine.index}: ${isSuspicious ? 'suspicious' : 'periodic'} review (${stats.plays} plays, avg score: ${Math.round(stats.totalScore / stats.plays)})`);
