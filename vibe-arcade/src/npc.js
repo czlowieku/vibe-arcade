@@ -291,24 +291,25 @@ export class NPC {
     let dirX = dx / dist;
     let dirZ = dz / dist;
 
-    // Simple avoidance — steer away from nearby NPCs
-    if (allNpcs) {
+    // Avoidance — only steer away from other WALKING npcs, weaker near target
+    if (allNpcs && dist > 0.8) {
+      const WALK_STATES = ['spawning', 'entering', 'browsing', 'walking_to_machine', 'leaving', 'despawning'];
       let avoidX = 0, avoidZ = 0;
       for (const other of allNpcs) {
         if (other === this) continue;
+        // Skip stationary NPCs (playing, watching, waiting, rating)
+        if (!WALK_STATES.includes(other.state)) continue;
         const ox = pos.x - other.group.position.x;
         const oz = pos.z - other.group.position.z;
         const oDist = Math.sqrt(ox * ox + oz * oz);
-        if (oDist < 1.2 && oDist > 0.01) {
-          // Push away, stronger when closer
-          const force = (1.2 - oDist) / 1.2;
+        if (oDist < 1.0 && oDist > 0.01) {
+          const force = (1.0 - oDist) / 1.0;
           avoidX += (ox / oDist) * force;
           avoidZ += (oz / oDist) * force;
         }
       }
-      dirX += avoidX * 0.8;
-      dirZ += avoidZ * 0.8;
-      // Re-normalize
+      dirX += avoidX * 0.5;
+      dirZ += avoidZ * 0.5;
       const len = Math.sqrt(dirX * dirX + dirZ * dirZ);
       if (len > 0.01) { dirX /= len; dirZ /= len; }
     }
