@@ -23,27 +23,39 @@ function stripBlock(code, pattern, searchFrom = 0) {
 }
 
 const GENRE_DESCRIPTIONS = {
-  platformer: 'A side-scrolling platformer where the player jumps between platforms, avoids hazards, and collects items. Player moves left/right and jumps.',
-  shooter: 'A top-down or side-scrolling shooter where the player fires projectiles at enemies. Enemies spawn in waves and drop toward the player.',
-  puzzle: 'A puzzle game with logic mechanics — matching, sorting, or pattern recognition. Clear conditions are met by solving the puzzle.',
-  runner: 'An endless runner where the player automatically moves forward and must jump/duck to avoid obstacles. Speed increases over time.',
-  dodge: 'A dodge game where obstacles fall/fly from edges and the player must avoid them. Survival time equals score.',
+  platformer: 'A side-scrolling platformer where the player jumps between platforms, avoids hazards, and collects items. Player moves left/right and jumps. Design interesting level layouts with moving platforms, gaps, and enemies.',
+  shooter: 'A top-down or side-scrolling shooter where the player fires projectiles at enemies. Enemies spawn in waves with different movement patterns. Add satisfying hit effects and screen shake.',
+  puzzle: 'A puzzle game with creative mechanics — could be matching, sorting, pattern recognition, sliding, stacking, or anything clever. Make the player think! Clear conditions should feel satisfying.',
+  runner: 'An endless runner where the player automatically moves forward and must jump/duck/dodge obstacles. Speed increases over time. Add variety — different obstacle types, collectibles, terrain changes.',
+  dodge: 'A dodge game where threats come from all directions — falling objects, lasers, projectiles, expanding circles. Be creative with obstacle patterns! Survival time = score. Make it feel intense.',
+  breakout: 'A breakout/arkanoid game — paddle at bottom, ball bounces off bricks. Add creative brick layouts, power-ups that fall from destroyed bricks (wider paddle, multi-ball, sticky paddle, laser). Ball speed increases over time.',
+  snake: 'A snake game — player controls a growing snake/worm. Eating food makes you longer. Dont hit walls or yourself. Add creative twists — special food types, obstacles that appear, speed changes. Make the arena interesting.',
+  'tower-defense': 'A simple tower defense — enemies walk a path, player places/upgrades 2-3 tower types by clicking. Towers auto-shoot. Waves get harder. Keep it simple but satisfying — show enemy health bars, tower ranges, satisfying projectile effects.',
+  fighting: 'A 1v1 fighting game — player vs AI opponent. Simple controls: move, punch, kick, block. Add a health bar for each fighter, hit effects, knockback. AI should be beatable but put up a good fight. Best of 1 round, 60 second timer.',
 };
 
 const THEME_DESCRIPTIONS = {
-  neon: 'Neon/cyberpunk aesthetic: glowing outlines, dark backgrounds (#0a0a1a), bright cyan (#00fff5), magenta (#ff00ff), yellow (#ffe600). Everything should glow.',
-  space: 'Deep space aesthetic: starfield background, planets, asteroids. Colors: dark navy, white stars, orange/red for dangers, blue for player.',
-  retro: '8-bit retro pixel aesthetic: chunky blocky shapes, limited color palette (greens, whites, reds on black). Feels like an old arcade game.',
-  ocean: 'Underwater ocean aesthetic: blue-green gradients, bubbles, fish, coral, seaweed. Colors: teals, deep blues, sandy yellows.',
-  forest: 'Enchanted forest aesthetic: greens, browns, magical sparkles. Trees, mushrooms, fireflies. Colors: forest greens, earth browns, golden glows.',
+  neon: 'Neon/cyberpunk aesthetic: glowing outlines, dark backgrounds (#0a0a1a), bright cyan (#00fff5), magenta (#ff00ff), yellow (#ffe600). Everything should glow and pulse. Add glow trails, neon reflections.',
+  space: 'Deep space aesthetic: animated starfield background, planets, asteroids, nebulae. Colors: dark navy, white stars, orange/red for dangers, blue for player. Add twinkling stars and particle effects.',
+  retro: '8-bit retro pixel aesthetic: chunky blocky shapes, limited color palette. Feels like a classic Game Boy or NES game. Pixel-perfect edges, screen flash effects, chiptune-style visual rhythm.',
+  ocean: 'Underwater ocean aesthetic: blue-green gradients, animated bubbles rising, fish swimming by, coral, seaweed swaying. Colors: teals, deep blues, sandy yellows. Everything feels floaty.',
+  forest: 'Enchanted forest aesthetic: greens, browns, magical sparkles. Trees, mushrooms, fireflies floating around. Colors: forest greens, earth browns, golden glows. Leaf particles drifting down.',
+  horror: 'Dark horror aesthetic: nearly black background with dim red/purple lighting. Flickering effects, fog/mist, eerie shapes in shadows. Enemies should look creepy. Sudden visual flashes for scares. Colors: black, blood red, sickly green, bone white.',
+  candy: 'Sweet candy aesthetic: bright pastels, pink/purple/yellow/mint. Everything looks edible — striped candy canes, gummy shapes, lollipop trees, chocolate platforms. Sparkly effects, rainbow trails. Happy and colorful.',
+  samurai: 'Japanese ink-wash aesthetic: elegant brushstroke style, cherry blossom petals falling, paper/parchment textures. Colors: white/cream background with bold black ink, red accents, pink sakura. Minimalist but beautiful.',
+  steampunk: 'Victorian steampunk aesthetic: brass/copper/bronze colors, visible gears and cogs, steam puffs, riveted metal plates. Dark brown backgrounds with warm orange/amber lighting. Clockwork mechanisms, pipes, gauges.',
 };
 
 const MODIFIER_DESCRIPTIONS = {
-  'speed-up': 'The game progressively gets faster. Start slow, ramp up speed every 10 seconds. Makes the game increasingly challenging.',
-  'gravity-flip': 'Include a gravity flip mechanic — pressing a key (Space or G) reverses gravity direction. Player falls upward or downward.',
-  'time-limit': 'Strict 60-second time limit. Show a visible countdown timer. Game ends when time runs out. Score as much as possible before then.',
-  boss: 'Include a boss enemy that appears after 30 seconds of play. Boss has health bar, attack patterns, and must be defeated to win.',
+  'speed-up': 'The game progressively gets faster every 10 seconds. Start chill, end frantic. Show a visible speed indicator. The acceleration should feel exciting not frustrating.',
+  'gravity-flip': 'Pressing Space or G reverses gravity. Player falls upward or downward. Design the level/arena to make gravity flipping FUN — put collectibles on ceilings, have hazards that require flipping to dodge.',
+  'time-limit': 'Strict 60-second countdown. Big visible timer. Score as much as possible before time runs out. Add a "HURRY UP!" visual at 10 seconds. Final score should feel earned.',
+  boss: 'A boss enemy appears after 30 seconds. Give it a health bar, 2-3 distinct attack patterns, and telegraphed moves. Make the fight feel epic — screen shake on hits, dramatic entrance. Defeating the boss = victory.',
   powerups: 'Add a power-up system that fits the game genre. Spawn collectible power-ups periodically — design 3-5 creative power-ups that make sense for this specific game (e.g. a shooter might have rapid fire, homing bullets, or a shield; a platformer might have double jump, magnet coins, or invincibility). Each power-up should have a distinct color/icon, last 5-8 seconds, and visually show when active. Be creative — surprise the player with fun combinations.',
+  combo: 'Add a combo/chain system — consecutive hits/actions without pause build a multiplier (x2, x3, x4... up to x10). Show the combo counter prominently. Combo resets after 2 seconds of no action. Higher combos = way more points. Add visual flair as combo grows (screen effects, color changes).',
+  survival: 'Endless survival mode — waves of increasing difficulty, no time limit. New enemy types appear every 30 seconds. Show wave number. The question is how long can you survive? Add brief moments of calm between waves.',
+  tiny: 'Everything is 50% smaller than normal — player, enemies, projectiles, platforms. But speed is 50% faster. The arena feels huge but everything zips around. Chaotic and fun.',
+  mirror: 'Controls are horizontally reversed — left goes right, right goes left. Up and down stay normal. This should be disorienting but playable. Add a visual "mirror" effect to remind the player (maybe a subtle horizontal flip on the UI).',
 };
 
 function buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions) {
@@ -83,7 +95,10 @@ Output a COMPLETE JavaScript file with this structure:
    - For gradients: ctx.createLinearGradient(), NOT CSS strings
    - Skip title screen — gameplay starts immediately
 
-Return ONLY JavaScript code. No markdown fences, no explanation.`;
+IMPORTANT: Your very first line must be a comment with a creative game title, like:
+// TITLE: Neon Gravity Blaster
+
+Then the rest of the JavaScript code. No markdown fences, no other explanation.`;
 }
 
 function buildPrompt(genre, theme, modifier, cardLevels, extraInstructions) {
@@ -129,7 +144,10 @@ CRITICAL Canvas2D rules (DO NOT BREAK):
 - Keep the game simple but visually interesting with shapes and colors
 - Use a dark background (#0a0a1a or similar) with bright colored game elements
 
-Return ONLY the JavaScript code. No markdown code fences, no explanation.
+IMPORTANT: Your very first line must be a comment with a creative game title, like:
+// TITLE: Neon Gravity Blaster
+
+Then the rest of the JavaScript code. No markdown fences, no other explanation.
 The code must be a complete, self-contained script that defines startGame at the top level.`;
 }
 
@@ -268,42 +286,11 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   }
 
   fullCode = sanitizeGameCode(fullCode);
+  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${fullCode.includes('function startGame')}`);
 
-  const hasStartGame = fullCode.includes('function startGame') || fullCode.includes('startGame =');
-  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${hasStartGame}`);
-
-  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${hasStartGame} | syntax: ${syntaxOk}`);
-  if (!hasStartGame) {
-    console.warn('[pipeline] AI output start:', fullCode.slice(0, 500));
-  }
-
-  // If code is broken, retry once without module assembly (plain generation)
-  if (!hasStartGame || !syntaxOk) {
-    console.log('[pipeline] Code broken — retrying with plain generation...');
-    const retryPrompt = buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
-    let retryCode = '';
-    try {
-      retryCode = isGemini
-        ? await streamGemini(retryPrompt, apiKey, res, logEntry)
-        : await streamAnthropic(retryPrompt, apiKey, res, logEntry);
-      retryCode = retryCode.replace(/<think>[\s\S]*?<\/think>/g, '');
-      const retryFence = retryCode.match(/```(?:javascript|js)?\n([\s\S]*?)```/);
-      if (retryFence) retryCode = retryFence[1];
-      else retryCode = retryCode.replace(/^```(?:javascript|js)?\n?/gm, '').replace(/\n?```\s*$/gm, '');
-      const retryStart = retryCode.search(/^(function |const |let |var |class |\/\/|\/\*)/m);
-      if (retryStart > 0) retryCode = retryCode.slice(retryStart);
-      retryCode = retryCode.trim();
-      retryCode = sanitizeGameCode(retryCode);
-      if (retryCode.includes('function startGame') || retryCode.includes('startGame =')) {
-        console.log('[pipeline] Retry succeeded!');
-        fullCode = retryCode;
-      }
-    } catch (retryErr) {
-      console.warn('[pipeline] Retry also failed:', retryErr.message);
-    }
-  }
-
-  const title = `${theme.toUpperCase()} ${genre.toUpperCase()}${modifier ? ' + ' + modifier.toUpperCase() : ''}`;
+  // Extract AI-generated title from first comment line
+  const titleMatch = fullCode.match(/^\/\/\s*TITLE:\s*(.+)$/m);
+  const title = titleMatch ? titleMatch[1].trim() : `${theme.toUpperCase()} ${genre.toUpperCase()}${modifier ? ' + ' + modifier.toUpperCase() : ''}`;
 
   const result = {
     type: 'done',
