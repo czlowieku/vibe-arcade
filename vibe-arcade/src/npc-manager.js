@@ -59,16 +59,6 @@ export class NpcManager {
 
   update(dt) {
     this._updateSpawner(dt);
-    // Debug: log NPC positions every 3 seconds
-    this._debugTimer = (this._debugTimer || 0) + dt;
-    if (this._debugTimer > 3) {
-      this._debugTimer = 0;
-      if (this.npcs.length > 0) {
-        console.log('[npc-debug]', this.npcs.map(n =>
-          `${n.name}(${n.state}) pos=${n.group.position.x.toFixed(1)},${n.group.position.z.toFixed(1)} queue=${n.walkQueue.length}`
-        ).join(' | '));
-      }
-    }
     for (const npc of this.npcs) {
       // Unstick NPCs — if walking state but empty queue, give them a target
       if (npc.walkQueue.length === 0 && (
@@ -131,29 +121,29 @@ export class NpcManager {
   }
 
   _spawnSingle() {
-    const spawnX = -2 + Math.random() * 4;
-    const offsetX = (Math.random() - 0.5) * 2; // spread out through doorway
-    const pos = new THREE.Vector3(spawnX, 0, 13);
+    const spawnX = -1.2 + Math.random() * 2.4;
+    const pos = new THREE.Vector3(spawnX, 0, 14);
     const npc = new NPC(nextNpcId++, pos, this._randomPersonality());
+    // Unique path through doorway with random offset
+    const doorX = (Math.random() - 0.5) * 1.5;
+    const entryX = (Math.random() - 0.5) * 3;
     npc.walkQueue = [
-      new THREE.Vector3(spawnX, 0, 13),
-      new THREE.Vector3(offsetX, 0, 8),
-      new THREE.Vector3(offsetX, 0, 6),
+      new THREE.Vector3(doorX, 0, 8),
+      new THREE.Vector3(entryX, 0, 5.5),
     ];
     this.npcs.push(npc);
     this.scene.add(npc.group);
   }
 
   _spawnPair() {
-    const baseX = -1 + Math.random() * 2;
     const id1 = nextNpcId++;
     const id2 = nextNpcId++;
-    const pos1 = new THREE.Vector3(baseX - 0.5, 0, 13);
-    const pos2 = new THREE.Vector3(baseX + 0.5, 0, 13);
+    const pos1 = new THREE.Vector3(-0.6, 0, 14);
+    const pos2 = new THREE.Vector3(0.6, 0, 14);
     const npc1 = new NPC(id1, pos1, this._randomPersonality(), id2);
     const npc2 = new NPC(id2, pos2, this._randomPersonality(), id1);
-    npc1.walkQueue = [pos1.clone(), new THREE.Vector3(-0.7, 0, 8), new THREE.Vector3(-0.7, 0, 6)];
-    npc2.walkQueue = [pos2.clone(), new THREE.Vector3(0.7, 0, 8), new THREE.Vector3(0.7, 0, 6)];
+    npc1.walkQueue = [new THREE.Vector3(-0.8, 0, 8), new THREE.Vector3(-1.5, 0, 5.5)];
+    npc2.walkQueue = [new THREE.Vector3(0.8, 0, 8), new THREE.Vector3(1.5, 0, 5.5)];
     this.npcs.push(npc1, npc2);
     this.scene.add(npc1.group);
     this.scene.add(npc2.group);
