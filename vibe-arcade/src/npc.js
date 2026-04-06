@@ -291,25 +291,28 @@ export class NPC {
     let dirX = dx / dist;
     let dirZ = dz / dist;
 
-    // Avoidance — only steer away from other WALKING npcs, weaker near target
-    if (allNpcs && dist > 0.8) {
-      const WALK_STATES = ['spawning', 'entering', 'browsing', 'walking_to_machine', 'leaving', 'despawning'];
+    // Avoidance — steer around all NPCs, stronger for walkers, weaker for stationary
+    if (allNpcs) {
       let avoidX = 0, avoidZ = 0;
       for (const other of allNpcs) {
         if (other === this) continue;
-        // Skip stationary NPCs (playing, watching, waiting, rating)
-        if (!WALK_STATES.includes(other.state)) continue;
         const ox = pos.x - other.group.position.x;
         const oz = pos.z - other.group.position.z;
         const oDist = Math.sqrt(ox * ox + oz * oz);
-        if (oDist < 1.0 && oDist > 0.01) {
-          const force = (1.0 - oDist) / 1.0;
-          avoidX += (ox / oDist) * force;
-          avoidZ += (oz / oDist) * force;
+        if (oDist > 0.01 && oDist < 1.5) {
+          const isWalking = other.walkQueue && other.walkQueue.length > 0;
+          const radius = isWalking ? 1.0 : 0.7;
+          if (oDist < radius) {
+            const force = (radius - oDist) / radius;
+            avoidX += (ox / oDist) * force;
+            avoidZ += (oz / oDist) * force;
+          }
         }
       }
-      dirX += avoidX * 0.5;
-      dirZ += avoidZ * 0.5;
+      // Scale avoidance: strong when far from target, weak when close
+      const avoidScale = Math.min(dist / 2.0, 1.0) * 0.6;
+      dirX += avoidX * avoidScale;
+      dirZ += avoidZ * avoidScale;
       const len = Math.sqrt(dirX * dirX + dirZ * dirZ);
       if (len > 0.01) { dirX /= len; dirZ /= len; }
     }

@@ -315,13 +315,20 @@ export class NpcManager {
     const machinePos = chosen.machine.group.position;
     const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(chosen.machine.group.quaternion);
 
+    // Side vector (perpendicular to forward)
+    const side = new THREE.Vector3(-forward.z, 0, forward.x);
+
     if (chosen.occupied) {
+      // Watch from behind and to the side — more spread
       const watchPos = machinePos.clone()
-        .add(forward.clone().multiplyScalar(1.8))
-        .add(new THREE.Vector3((Math.random() - 0.5) * 0.8, 0, 0));
+        .add(forward.clone().multiplyScalar(2.0 + Math.random() * 0.5))
+        .add(side.clone().multiplyScalar((Math.random() - 0.5) * 2.0));
       npc.walkQueue = [watchPos];
     } else {
-      const playPos = machinePos.clone().add(forward.clone().multiplyScalar(1.2));
+      // Play position — slightly random offset so not exactly same spot
+      const playPos = machinePos.clone()
+        .add(forward.clone().multiplyScalar(1.2))
+        .add(side.clone().multiplyScalar((Math.random() - 0.5) * 0.3));
       npc.walkQueue = [playPos];
     }
   }
