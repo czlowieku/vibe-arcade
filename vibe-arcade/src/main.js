@@ -155,6 +155,31 @@ const gameManager = new GameManager(gameState, save);
 const reputation = new Reputation(gameState, save);
 const npcManager = new NpcManager(scene, arcadeRoom.machines, reputation, gameState, save);
 
+// Coin earned animation — floating "+X 💰" over machine
+npcManager.onCoinsEarned = (machine, coins) => {
+  hud.updateDisplay();
+  // Project machine 3D position to screen
+  const pos = machine.group.position.clone();
+  pos.y += 2.5;
+  pos.project(cameraCtrl.camera);
+  const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+
+  const el = document.createElement('div');
+  el.textContent = `+${coins} 💰`;
+  el.style.cssText = `
+    position: fixed; left: ${x}px; top: ${y}px;
+    color: #ffe600; font-size: 22px; font-weight: 900;
+    font-family: 'Segoe UI', sans-serif;
+    text-shadow: 0 0 8px rgba(255,230,0,0.8), 0 2px 4px rgba(0,0,0,0.5);
+    pointer-events: none; z-index: 999;
+    transform: translate(-50%, -50%);
+    animation: coinFloat 1.5s ease-out forwards;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1600);
+};
+
 // --- Restore saved machines ---
 for (let i = 0; i < gameState.machines.length; i++) {
   const saved = gameState.machines[i];
@@ -188,7 +213,7 @@ const cardUI = new CardUI(
   () => {
     // On cancel — return to arcade view
     cameraCtrl.zoomOut();
-    cardUI.showCardBar();
+    // // cardUI.showCardBar();
     hud.hideBackButton();
     hideMachineCards();
     activeMachine = null;
@@ -297,7 +322,7 @@ hud.onBackToArcade = () => {
   hud.hideReviewsButton();
   hideMachineCards();
   document.getElementById('btn-suggestions').classList.add('hidden');
-  cardUI.showCardBar();
+  // // cardUI.showCardBar();
   hud.updateDisplay();
 };
 
@@ -316,7 +341,7 @@ hud.onBack = () => {
   hideMachineCards();
   hud.hideKickButton();
   document.getElementById('btn-suggestions').classList.add('hidden');
-  cardUI.showCardBar();
+  // // cardUI.showCardBar();
 };
 
 hud.onNewGame = () => {
@@ -617,7 +642,7 @@ document.getElementById('btn-close-suggestions').addEventListener('click', () =>
 });
 
 // Show card bar on start
-cardUI.showCardBar();
+// cardUI.showCardBar();
 
 // --- Interaction ---
 const raycaster = new THREE.Raycaster();
@@ -901,7 +926,7 @@ document.addEventListener('keydown', (e) => {
       hud.hideGameOver();
       hideMachineCards();
       document.getElementById('btn-suggestions').classList.add('hidden');
-      cardUI.showCardBar();
+      // // cardUI.showCardBar();
     }
     return;
   }
