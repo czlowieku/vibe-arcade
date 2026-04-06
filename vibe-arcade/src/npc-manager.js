@@ -59,6 +59,16 @@ export class NpcManager {
 
   update(dt) {
     this._updateSpawner(dt);
+    // Debug: log NPC positions every 3 seconds
+    this._debugTimer = (this._debugTimer || 0) + dt;
+    if (this._debugTimer > 3) {
+      this._debugTimer = 0;
+      if (this.npcs.length > 0) {
+        console.log('[npc-debug]', this.npcs.map(n =>
+          `${n.name}(${n.state}) pos=${n.group.position.x.toFixed(1)},${n.group.position.z.toFixed(1)} queue=${n.walkQueue.length}`
+        ).join(' | '));
+      }
+    }
     for (const npc of this.npcs) {
       // Unstick NPCs — if walking state but empty queue, give them a target
       if (npc.walkQueue.length === 0 && (
