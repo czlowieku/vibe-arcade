@@ -32,6 +32,10 @@ const GENRE_DESCRIPTIONS = {
   snake: 'A snake game — player controls a growing snake/worm. Eating food makes you longer. Dont hit walls or yourself. Add creative twists — special food types, obstacles that appear, speed changes. Make the arena interesting.',
   'tower-defense': 'A simple tower defense — enemies walk a path, player places/upgrades 2-3 tower types by clicking. Towers auto-shoot. Waves get harder. Keep it simple but satisfying — show enemy health bars, tower ranges, satisfying projectile effects.',
   fighting: 'A 1v1 fighting game — player vs AI opponent. Simple controls: move, punch, kick, block. Add a health bar for each fighter, hit effects, knockback. AI should be beatable but put up a good fight. Best of 1 round, 60 second timer.',
+  rhythm: 'A rhythm game — notes/arrows fall from top, player presses matching keys (arrow keys or WASD) when they hit the target line. Score based on timing accuracy (Perfect/Good/Miss). Generate a pattern of notes that feels musical with varying speeds. Show combo counter and accuracy rating.',
+  golf: 'A 2D mini golf game — top-down view. Player aims with arrow keys, holds Space to set power, releases to shoot. Ball physics with bouncing off walls. Design 1 creative hole with obstacles (bumpers, moving walls, water hazards). Hole-in-one bonus. Par score shown.',
+  racing: 'A top-down racing game — player car drives on a track, steers left/right, accelerates/brakes. 2-3 AI opponents. Finish 3 laps to win. Add drifting (visual skid marks), speed boosts on track, and collision with walls slows you down. Show lap counter and positions.',
+  fishing: 'A fishing game — cast line with Space (hold for distance), wait for a bite (bobber animation), then reel in with timed key presses. Different fish types worth different points. Some fish fight harder (rapid key mashing). Relaxing but engaging. Show catch count and total weight.',
 };
 
 const THEME_DESCRIPTIONS = {
@@ -44,6 +48,10 @@ const THEME_DESCRIPTIONS = {
   candy: 'Sweet candy aesthetic: bright pastels, pink/purple/yellow/mint. Everything looks edible — striped candy canes, gummy shapes, lollipop trees, chocolate platforms. Sparkly effects, rainbow trails. Happy and colorful.',
   samurai: 'Japanese ink-wash aesthetic: elegant brushstroke style, cherry blossom petals falling, paper/parchment textures. Colors: white/cream background with bold black ink, red accents, pink sakura. Minimalist but beautiful.',
   steampunk: 'Victorian steampunk aesthetic: brass/copper/bronze colors, visible gears and cogs, steam puffs, riveted metal plates. Dark brown backgrounds with warm orange/amber lighting. Clockwork mechanisms, pipes, gauges.',
+  desert: 'Scorching desert aesthetic: golden sand dunes, blazing sun, heat shimmer effect. Colors: sandy gold, burnt orange, deep blue sky. Add cacti, pyramids in distance, sand particles blowing. Everything feels hot and dry.',
+  arctic: 'Frozen arctic aesthetic: white/ice blue palette, snowflakes falling, aurora borealis in sky (animated color bands). Slippery surfaces, ice crystals, frosty breath effects. Colors: white, ice blue, deep navy, green/purple aurora.',
+  lava: 'Volcanic aesthetic: black rock with glowing orange/red lava cracks. Rivers of lava flowing, embers floating upward, volcanic eruptions in background. Colors: black, deep red, bright orange, yellow-hot. Everything feels dangerous and hot.',
+  matrix: 'Matrix/digital aesthetic: black background with falling green code characters (rain effect). Glitch effects, digital scan lines, wireframe objects that occasionally solidify. Colors: black, bright green (#00ff00), white flashes. Reality feels unstable.',
 };
 
 const MODIFIER_DESCRIPTIONS = {
@@ -56,6 +64,10 @@ const MODIFIER_DESCRIPTIONS = {
   survival: 'Endless survival mode — waves of increasing difficulty, no time limit. New enemy types appear every 30 seconds. Show wave number. The question is how long can you survive? Add brief moments of calm between waves.',
   tiny: 'Everything is 50% smaller than normal — player, enemies, projectiles, platforms. But speed is 50% faster. The arena feels huge but everything zips around. Chaotic and fun.',
   mirror: 'Controls are horizontally reversed — left goes right, right goes left. Up and down stay normal. This should be disorienting but playable. Add a visual "mirror" effect to remind the player (maybe a subtle horizontal flip on the UI).',
+  'fog-of-war': 'Only a small circle around the player is visible — the rest of the screen is dark/fogged. Radius is about 120px. Things outside the circle are hidden. Creates tension — enemies and obstacles appear suddenly. Add a subtle glow at the edge of visibility.',
+  'one-hit': 'Player dies in one hit — no health bar, no second chances. But score multiplier is always x3 to reward the risk. Add a dramatic death effect (explosion, slow-mo flash). Makes every moment tense. Show "HARDCORE" badge on screen.',
+  growing: 'Player character grows 10% bigger every 10 seconds. Starts tiny, ends huge. Bigger = easier to hit but also more powerful. Hitbox grows with visual size. At max size the screen feels cramped. Show current size percentage.',
+  split: 'Player controls TWO characters simultaneously — one on left half, one on right half. Same inputs control both but mirrored. Both must survive. If one dies, game over. Double the chaos, double the fun. Draw a dividing line down the middle.',
 };
 
 function buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions) {
