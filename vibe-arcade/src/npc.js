@@ -270,16 +270,16 @@ export class NPC {
     }
   }
 
-  moveToward(dt, allNpcs) {
+  moveToward(dt) {
     if (this.walkQueue.length === 0) return true;
 
     const target = this.walkQueue[0];
     const pos = this.group.position;
-    let dx = target.x - pos.x;
-    let dz = target.z - pos.z;
+    const dx = target.x - pos.x;
+    const dz = target.z - pos.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
 
-    if (dist < 0.2) {
+    if (dist < 0.15) {
       this.group.position.x = target.x;
       this.group.position.z = target.z;
       if (target.y !== undefined) this.group.position.y = target.y;
@@ -287,43 +287,13 @@ export class NPC {
       return this.walkQueue.length === 0;
     }
 
-    // Normalize direction
-    let dirX = dx / dist;
-    let dirZ = dz / dist;
-
-    // Avoidance — steer around all NPCs, stronger for walkers, weaker for stationary
-    if (allNpcs) {
-      let avoidX = 0, avoidZ = 0;
-      for (const other of allNpcs) {
-        if (other === this) continue;
-        const ox = pos.x - other.group.position.x;
-        const oz = pos.z - other.group.position.z;
-        const oDist = Math.sqrt(ox * ox + oz * oz);
-        if (oDist > 0.01 && oDist < 1.5) {
-          const isWalking = other.walkQueue && other.walkQueue.length > 0;
-          const radius = isWalking ? 1.0 : 0.7;
-          if (oDist < radius) {
-            const force = (radius - oDist) / radius;
-            avoidX += (ox / oDist) * force;
-            avoidZ += (oz / oDist) * force;
-          }
-        }
-      }
-      // Scale avoidance: strong when far from target, weak when close
-      const avoidScale = Math.min(dist / 2.0, 1.0) * 0.6;
-      dirX += avoidX * avoidScale;
-      dirZ += avoidZ * avoidScale;
-      const len = Math.sqrt(dirX * dirX + dirZ * dirZ);
-      if (len > 0.01) { dirX /= len; dirZ /= len; }
-    }
-
     // Face movement direction
-    this.group.rotation.y = Math.atan2(dirX, dirZ);
+    this.group.rotation.y = Math.atan2(dx, dz);
 
-    // Step
+    // Step toward target
     const step = Math.min(WALK_SPEED * dt, dist);
-    this.group.position.x += dirX * step;
-    this.group.position.z += dirZ * step;
+    this.group.position.x += (dx / dist) * step;
+    this.group.position.z += (dz / dist) * step;
 
     return false;
   }

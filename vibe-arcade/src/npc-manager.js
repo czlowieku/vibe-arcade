@@ -132,7 +132,7 @@ export class NpcManager {
     switch (npc.state) {
       case STATES.SPAWNING:
       case STATES.ENTERING:
-        if (npc.moveToward(dt, this.npcs)) {
+        if (npc.moveToward(dt)) {
           npc.state = STATES.BROWSING;
           npc.browseCount = 0;
           this._addBrowseTarget(npc);
@@ -140,7 +140,7 @@ export class NpcManager {
         break;
 
       case STATES.BROWSING:
-        if (npc.moveToward(dt, this.npcs)) {
+        if (npc.moveToward(dt)) {
           npc.browseCount++;
           if (npc.browseCount >= 1 + Math.floor(Math.random() * 2)) {
             npc.state = STATES.CHOOSING;
@@ -155,10 +155,15 @@ export class NpcManager {
         break;
 
       case STATES.WALKING_TO_MACHINE:
-        if (npc.moveToward(dt, this.npcs)) {
+        if (npc.moveToward(dt)) {
           const machine = npc.targetMachine;
           if (!machine) { this._startLeaving(npc); break; }
           if (machine.npcOccupant && machine.npcOccupant !== npc) {
+            // Face the machine screen
+            const dir = new THREE.Vector3().subVectors(machine.group.position, npc.group.position);
+            dir.y = 0;
+            if (dir.length() > 0.01) npc.group.rotation.y = Math.atan2(dir.x, dir.z);
+
             if (Math.random() < 0.5) {
               npc.state = STATES.WATCHING;
               npc.stateTimer = 8 + Math.random() * 10;
@@ -194,8 +199,14 @@ export class NpcManager {
 
       case STATES.WATCHING:
         npc.stateTimer -= dt;
-        if (Math.random() < dt * 0.3) {
-          npc.showEmoticon(['!', '!!', '😮', '👀'][Math.floor(Math.random() * 4)]);
+        // Keep facing the machine
+        if (npc.targetMachine) {
+          const dir = new THREE.Vector3().subVectors(npc.targetMachine.group.position, npc.group.position);
+          dir.y = 0;
+          if (dir.length() > 0.01) npc.group.rotation.y = Math.atan2(dir.x, dir.z);
+        }
+        if (Math.random() < dt * 0.4) {
+          npc.showEmoticon(['!', '!!', '😮', '👀', '👏', '🔥', 'WOW', 'hehe'][Math.floor(Math.random() * 8)]);
         }
         if (npc.stateTimer <= 0) {
           const machine = npc.targetMachine;
@@ -267,14 +278,14 @@ export class NpcManager {
         break;
 
       case STATES.LEAVING:
-        if (npc.moveToward(dt, this.npcs)) {
+        if (npc.moveToward(dt)) {
           npc.state = STATES.DESPAWNING;
           npc.walkQueue = [new THREE.Vector3(npc.group.position.x, 0, 16)];
         }
         break;
 
       case STATES.DESPAWNING:
-        if (npc.moveToward(dt, this.npcs)) {
+        if (npc.moveToward(dt)) {
           npc.dead = true;
         }
         break;
@@ -319,16 +330,15 @@ export class NpcManager {
     const side = new THREE.Vector3(-forward.z, 0, forward.x);
 
     if (chosen.occupied) {
-      // Watch from behind and to the side — more spread
+      // Watch from behind the player — pick left or right side
+      const watchSide = Math.random() < 0.5 ? -1 : 1;
       const watchPos = machinePos.clone()
-        .add(forward.clone().multiplyScalar(2.0 + Math.random() * 0.5))
-        .add(side.clone().multiplyScalar((Math.random() - 0.5) * 2.0));
+        .add(forward.clone().multiplyScalar(1.8))
+        .add(side.clone().multiplyScalar(watchSide * (0.6 + Math.random() * 0.4)));
       npc.walkQueue = [watchPos];
     } else {
-      // Play position — slightly random offset so not exactly same spot
-      const playPos = machinePos.clone()
-        .add(forward.clone().multiplyScalar(1.2))
-        .add(side.clone().multiplyScalar((Math.random() - 0.5) * 0.3));
+      // Play position — right in front of machine
+      const playPos = machinePos.clone().add(forward.clone().multiplyScalar(1.2));
       npc.walkQueue = [playPos];
     }
   }
