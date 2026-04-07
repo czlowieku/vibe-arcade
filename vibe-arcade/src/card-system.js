@@ -96,4 +96,13 @@ export function addCardToInventory(cards, newCard) {
   }
 }
 
-export const PACK_COST = 100;
+export const PACK_COST = 100; // legacy
+
+export function getCardPrice(card, owned) {
+  if (!owned) {
+    // First unlock
+    return card.category === 'engine' ? 200 : 50;
+  }
+  // Star upgrade
+  return card.category === 'engine' ? 150 : 75;
+}

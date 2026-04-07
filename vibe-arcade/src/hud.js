@@ -1,5 +1,5 @@
-import { generateCardPack, addCardToInventory, getCardById, PACK_COST, CARDS, ALL_CARDS } from './card-system.js';
-import { getApiKey, setApiKey } from './storage.js';
+import { generateCardPack, addCardToInventory, getCardById, PACK_COST, CARDS, ALL_CARDS, getCardPrice, createPlayerCard } from './card-system.js';
+import { getApiKey, setApiKey, getGeminiKey, setGeminiKey, getProvider, setProvider, getActiveKey } from './storage.js';
 
 export class HUD {
   constructor(gameState, saveCallback) {
@@ -14,7 +14,7 @@ export class HUD {
     this.cardPackPanel = document.getElementById('card-pack');
     this.packCardsEl = document.getElementById('pack-cards');
     this.buyPackEl = document.getElementById('buy-pack');
-    this.backButtonEl = document.getElementById('back-button');
+    this.zoomedViewEl = document.getElementById('zoomed-view');
     this.reputationEl = document.getElementById('reputation-value');
     this.visitorsEl = document.getElementById('visitors-value');
 
@@ -83,20 +83,31 @@ export class HUD {
     });
 
     document.getElementById('btn-api-key').addEventListener('click', () => {
-      const input = document.getElementById('api-key-input');
-      input.value = getApiKey();
+      document.getElementById('api-key-input').value = getApiKey();
+      document.getElementById('gemini-key-input').value = getGeminiKey();
+      this._updateProviderToggle(getProvider());
       document.getElementById('api-key-panel').classList.remove('hidden');
     });
 
     document.getElementById('btn-save-key').addEventListener('click', () => {
-      const key = document.getElementById('api-key-input').value.trim();
-      setApiKey(key);
+      setApiKey(document.getElementById('api-key-input').value.trim());
+      setGeminiKey(document.getElementById('gemini-key-input').value.trim());
       document.getElementById('api-key-panel').classList.add('hidden');
       this._updateApiKeyButton();
     });
 
     document.getElementById('btn-cancel-key').addEventListener('click', () => {
       document.getElementById('api-key-panel').classList.add('hidden');
+    });
+
+    // Provider toggle buttons
+    document.querySelectorAll('.provider-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const provider = btn.dataset.provider;
+        setProvider(provider);
+        this._updateProviderToggle(provider);
+        this._updateApiKeyButton();
+      });
     });
 
     document.getElementById('btn-reviews').addEventListener('click', () => {
@@ -106,12 +117,37 @@ export class HUD {
       this.reviewsPanel.classList.add('hidden');
     });
 
+    // Zoomed-view duplicate buttons (right sidebar)
+    document.getElementById('btn-collection-z').addEventListener('click', () => {
+      this.showCollection();
+    });
+    document.getElementById('btn-history-z').addEventListener('click', () => {
+      this.showHistory();
+    });
+    document.getElementById('btn-api-key-z').addEventListener('click', () => {
+      document.getElementById('api-key-input').value = getApiKey();
+      document.getElementById('gemini-key-input').value = getGeminiKey();
+      this._updateProviderToggle(getProvider());
+      document.getElementById('api-key-panel').classList.remove('hidden');
+    });
+
     this._updateApiKeyButton();
   }
 
+  _updateProviderToggle(provider) {
+    document.querySelectorAll('.provider-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.provider === provider);
+    });
+  }
+
   _updateApiKeyButton() {
-    const btn = document.getElementById('btn-api-key');
-    btn.textContent = getApiKey() ? '🔑 API KEY ✓' : '🔑 API KEY';
+    const provider = getProvider();
+    const hasKey = !!getActiveKey();
+    const label = provider === 'gemini' ? 'GEMINI' : 'ANTHROPIC';
+    const text = hasKey ? `🔑 ${label} ✓` : `🔑 ${label}`;
+    document.getElementById('btn-api-key').textContent = text;
+    const zBtn = document.getElementById('btn-api-key-z');
+    if (zBtn) zBtn.textContent = text;
   }
 
   showCollection() {
@@ -122,7 +158,7 @@ export class HUD {
     const totalOwned = ownedIds.size;
     const totalCards = ALL_CARDS.length;
     document.getElementById('collection-progress').textContent =
-      `${totalOwned} / ${totalCards} cards unlocked (${Math.round(totalOwned / totalCards * 100)}%)`;
+      `${totalOwned} / ${totalCards} cards unlocked — 💰 ${this.gameState.coins}`;
 
     const sections = { genre: 'collection-section-genre', theme: 'collection-section-theme', modifier: 'collection-section-modifier', engine: 'collection-section-engine' };
 
@@ -133,6 +169,9 @@ export class HUD {
       for (const card of CARDS[category]) {
         const owned = ownedIds.has(card.id);
         const pc = ownedMap[card.id];
+        const maxed = owned && pc && pc.stars >= 5;
+        const price = getCardPrice(card, owned);
+        const canAfford = this.gameState.coins >= price;
 
         const el = document.createElement('div');
         el.className = `collection-card ${card.category} ${owned ? 'owned' : 'locked'}`;
@@ -140,7 +179,7 @@ export class HUD {
         if (owned && pc) {
           const stars = document.createElement('div');
           stars.className = 'card-stars';
-          stars.textContent = '★'.repeat(pc.stars);
+          stars.textContent = '★'.repeat(pc.stars) + '☆'.repeat(5 - pc.stars);
           el.appendChild(stars);
         }
 
@@ -156,14 +195,24 @@ export class HUD {
 
         const desc = document.createElement('div');
         desc.className = 'card-desc';
-        desc.textContent = owned ? card.desc : '';
+        desc.textContent = card.desc;
         el.appendChild(desc);
 
-        if (!owned) {
-          const lock = document.createElement('div');
-          lock.className = 'locked-label';
-          lock.textContent = '🔒 Locked';
-          el.appendChild(lock);
+        if (!maxed) {
+          const btn = document.createElement('button');
+          btn.className = 'card-buy-btn';
+          btn.textContent = owned ? `⬆ UPGRADE ${price} 💰` : `🔓 UNLOCK ${price} 💰`;
+          btn.disabled = !canAfford;
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._buyCard(card, owned);
+          });
+          el.appendChild(btn);
+        } else {
+          const maxLabel = document.createElement('div');
+          maxLabel.className = 'card-maxed';
+          maxLabel.textContent = '✓ MAX';
+          el.appendChild(maxLabel);
         }
 
         grid.appendChild(el);
@@ -173,12 +222,32 @@ export class HUD {
     document.getElementById('collection-panel').classList.remove('hidden');
   }
 
+  _buyCard(card, alreadyOwned) {
+    const price = getCardPrice(card, alreadyOwned);
+    if (this.gameState.coins < price) return;
+
+    this.gameState.coins -= price;
+
+    if (alreadyOwned) {
+      const pc = this.gameState.cards.find(c => c.cardId === card.id);
+      if (pc) pc.stars = Math.min(pc.stars + 1, 5);
+    } else {
+      this.gameState.cards.push(createPlayerCard(card.id));
+    }
+
+    this.saveCallback();
+    this.updateDisplay();
+    this.showCollection(); // refresh
+  }
+
   updateDisplay() {
     this.coinsEl.textContent = this.gameState.coins;
     this.levelEl.textContent = Math.floor(this.gameState.totalGamesPlayed / 5) + 1;
 
-    // Always show buy-pack bar (contains API key button too)
-    this.buyPackEl.classList.remove('hidden');
+    // Show buy-pack bar only when not in zoomed view
+    if (this.zoomedViewEl.classList.contains('hidden')) {
+      this.buyPackEl.classList.remove('hidden');
+    }
     // Disable/enable buy pack button based on coins
     const buyBtn = document.getElementById('btn-buy-pack');
     buyBtn.disabled = this.gameState.coins < PACK_COST;
@@ -186,7 +255,7 @@ export class HUD {
 
   showGameOver(score, coinsEarned) {
     this.finalScoreEl.textContent = score;
-    this.coinsEarnedEl.textContent = `+${coinsEarned} 💰`;
+    this.coinsEarnedEl.textContent = coinsEarned > 0 ? `+${coinsEarned} 💰` : '';
     this.gameOverPanel.classList.remove('hidden');
     this.updateDisplay();
   }
@@ -196,11 +265,16 @@ export class HUD {
   }
 
   showBackButton() {
-    this.backButtonEl.classList.remove('hidden');
+    this.zoomedViewEl.classList.remove('hidden');
+    this.buyPackEl.classList.add('hidden');
+    // Restore action button visibility by default
+    document.getElementById('btn-modify-game').classList.remove('hidden');
+    document.getElementById('btn-new-game').classList.remove('hidden');
   }
 
   hideBackButton() {
-    this.backButtonEl.classList.add('hidden');
+    this.zoomedViewEl.classList.add('hidden');
+    this.buyPackEl.classList.remove('hidden');
   }
 
   updateNpcDisplay(reputation, visitorCount) {

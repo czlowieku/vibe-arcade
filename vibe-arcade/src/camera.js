@@ -227,7 +227,7 @@ export class CameraController {
     // Get machine forward direction and place camera close to screen
     const forward = new THREE.Vector3(0, 0, 1);
     forward.applyQuaternion(machine.group.quaternion);
-    this.targetPosition.copy(screenPos).add(forward.multiplyScalar(1.8));
+    this.targetPosition.copy(screenPos).add(forward.multiplyScalar(1.4));
     this.targetPosition.y = screenPos.y;
     this.targetLookAt.copy(screenPos);
   }

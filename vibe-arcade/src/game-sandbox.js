@@ -1,5 +1,4 @@
 // Game sandbox - executes AI-generated Canvas2D game code directly
-// The game code is sanitized server-side before reaching here.
 // This is intentional dynamic code execution for AI-generated mini-games.
 
 const ALLOWED_CDN_HOSTS = new Set([
@@ -8,44 +7,41 @@ const ALLOWED_CDN_HOSTS = new Set([
   'unpkg.com',
 ]);
 
+let runToken = 0;
+
 export class GameSandbox {
   constructor() {
-    this.gameCanvas = document.createElement('canvas');
-    this.gameCanvas.width = 800;
-    this.gameCanvas.height = 600;
-    this.gameCtx = this.gameCanvas.getContext('2d');
+    this.gameCanvas = null;
     this.running = false;
     this.onScore = null;
     this.onGameOver = null;
     this._loadedLibs = new Set();
+    this._runToken = 0;
+  }
+
+  _createFreshCanvas() {
+    if (this.gameCanvas && this.gameCanvas.parentNode) {
+      this.gameCanvas.parentNode.removeChild(this.gameCanvas);
+    }
+    this.gameCanvas = document.createElement('canvas');
+    this.gameCanvas.width = 800;
+    this.gameCanvas.height = 600;
+    return this.gameCanvas;
   }
 
   async _loadDependencies(deps) {
     if (!deps || deps.length === 0) return;
     const toLoad = deps.filter(url => !this._loadedLibs.has(url));
     for (const url of toLoad) {
-      // Validate CDN URL
       try {
         const parsed = new URL(url);
-        if (!ALLOWED_CDN_HOSTS.has(parsed.hostname)) {
-          console.warn('Blocked non-whitelisted CDN:', url);
-          continue;
-        }
-      } catch {
-        console.warn('Invalid dependency URL:', url);
-        continue;
-      }
-      await new Promise((resolve, reject) => {
+        if (!ALLOWED_CDN_HOSTS.has(parsed.hostname)) continue;
+      } catch { continue; }
+      await new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = url;
-        script.onload = () => {
-          this._loadedLibs.add(url);
-          resolve();
-        };
-        script.onerror = () => {
-          console.warn('Failed to load dependency:', url);
-          resolve(); // Don't block on failed loads
-        };
+        script.onload = () => { this._loadedLibs.add(url); resolve(); };
+        script.onerror = () => resolve();
         document.head.appendChild(script);
       });
     }
@@ -56,52 +52,67 @@ export class GameSandbox {
     this.onScore = onScore;
     this.onGameOver = onGameOver;
     this.running = true;
+    this._runToken = ++runToken;
+    const myToken = this._runToken;
 
-    // Clear canvas to dark background
-    this.gameCtx.fillStyle = '#0a0a1a';
-    this.gameCtx.fillRect(0, 0, 800, 600);
-
-    // Load CDN dependencies first
+    this._createFreshCanvas();
     await this._loadDependencies(deps);
 
-    // Build a self-contained script and run it via a Blob-based script element
-    // This is the core mechanic of Vibe Arcade: AI generates game code that runs here
-    const wrappedCode = `
-      try {
-        ${gameCode}
-        startGame(
-          document.getElementById('__vibe_game_canvas'),
-          window.__vibe_onScore,
-          window.__vibe_onGameOver
-        );
-      } catch(err) {
-        console.error('Game error:', err);
-        const ctx = document.getElementById('__vibe_game_canvas').getContext('2d');
-        ctx.fillStyle = '#0a0a1a';
-        ctx.fillRect(0, 0, 800, 600);
-        ctx.fillStyle = '#ff4444';
-        ctx.font = '24px Courier New';
-        ctx.textAlign = 'center';
-        ctx.fillText('ERROR: ' + err.message, 400, 280);
-        window.__vibe_onGameOver(0);
-      }
-    `;
+    // If another load happened while we were loading deps, bail
+    if (this._runToken !== myToken) return;
 
-    // Attach canvas to DOM temporarily (hidden) so game code can find it
+    // Attach canvas
     this.gameCanvas.id = '__vibe_game_canvas';
     this.gameCanvas.style.cssText = 'position:absolute;top:-9999px;left:-9999px;';
     document.body.appendChild(this.gameCanvas);
 
-    // Set up callbacks on window
+    // Callbacks — token-guarded so old games can't fire into new ones
     window.__vibe_onScore = (points) => {
-      if (this.onScore) this.onScore(points);
+      if (this._runToken === myToken && this.onScore) this.onScore(points);
     };
     window.__vibe_onGameOver = (finalScore) => {
+      if (this._runToken !== myToken) return;
       this.running = false;
       if (this.onGameOver) this.onGameOver(finalScore);
     };
 
-    // Execute via script element with blob URL
+    // Override rAF so old game loops auto-stop when a new game starts
+    const nativeRAF = window.requestAnimationFrame.bind(window);
+    window.__vibe_raf = (cb) => {
+      if (this._runToken !== myToken) return 0; // old game — stop loop
+      return nativeRAF(cb);
+    };
+
+    // Wrap in IIFE so const/let/class don't pollute global scope
+    // Override requestAnimationFrame inside the IIFE to use token-guarded version
+    // This is the core mechanic of Vibe Arcade: AI generates game code that runs here
+    const wrappedCode = `
+;(function() {
+  var requestAnimationFrame = window.__vibe_raf || window.requestAnimationFrame.bind(window);
+${gameCode}
+
+  try {
+    startGame(
+      document.getElementById('__vibe_game_canvas'),
+      window.__vibe_onScore,
+      window.__vibe_onGameOver
+    );
+  } catch(err) {
+    console.error('Game error:', err);
+    var ctx = document.getElementById('__vibe_game_canvas').getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#0a0a1a';
+      ctx.fillRect(0, 0, 800, 600);
+      ctx.fillStyle = '#ff4444';
+      ctx.font = '24px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('ERROR: ' + err.message, 400, 280);
+    }
+    if (window.__vibe_onGameOver) window.__vibe_onGameOver(0);
+  }
+})();
+    `;
+
     const blob = new Blob([wrappedCode], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
     this._script = document.createElement('script');
@@ -111,7 +122,7 @@ export class GameSandbox {
   }
 
   captureFrame(targetCanvas, targetCtx) {
-    if (!this.running) return false;
+    if (!this.running || !this.gameCanvas) return false;
     try {
       targetCtx.drawImage(this.gameCanvas, 0, 0);
       return true;
@@ -120,26 +131,21 @@ export class GameSandbox {
     }
   }
 
-  sendInput(type, key, code) {
-    // Game code listens on window directly — no forwarding needed
-  }
+  sendInput(type, key, code) {}
 
   stop() {
     this.running = false;
-    // Remove script and canvas from DOM
+    this._runToken = ++runToken; // invalidate old game loops
     if (this._script && this._script.parentNode) {
       this._script.parentNode.removeChild(this._script);
       this._script = null;
     }
-    if (this.gameCanvas.parentNode) {
+    if (this.gameCanvas && this.gameCanvas.parentNode) {
       this.gameCanvas.parentNode.removeChild(this.gameCanvas);
     }
-    // Clean up window globals
     delete window.__vibe_onScore;
     delete window.__vibe_onGameOver;
-    // Clear canvas
-    this.gameCtx.fillStyle = '#0a0a1a';
-    this.gameCtx.fillRect(0, 0, 800, 600);
+    delete window.__vibe_raf;
   }
 
   destroy() {

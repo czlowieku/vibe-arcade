@@ -145,12 +145,12 @@
       </div>
     </div>
 
-    <!-- Buy Pack + Collection Buttons -->
+    <!-- Buy Pack + Collection Buttons (iso view) -->
     <div id="buy-pack" class="hidden">
-      <button id="btn-buy-pack">📦 BUY PACK (100 💰)</button>
-      <button id="btn-collection">📖 COLLECTION</button>
-      <button id="btn-history">📋 HISTORIA</button>
-      <button id="btn-api-key">🔑 API KEY</button>
+      <button id="btn-buy-pack" style="display:none">📦 BUY PACK</button>
+      <button id="btn-collection" class="zoomed-btn">📖 COLLECTION</button>
+      <button id="btn-history" class="zoomed-btn">📋 HISTORY</button>
+      <button id="btn-api-key" class="zoomed-btn">🔑 API KEY</button>
     </div>
 
     <!-- Card Collection Panel -->
@@ -185,18 +185,29 @@
       </div>
     </div>
 
-    <!-- Back button when zoomed -->
-    <div id="back-button" class="hidden">
-      <button id="btn-back">← BACK</button>
-      <button id="btn-modify-game">✏️ MODIFY</button>
-      <button id="btn-new-game">🔄 NEW GAME</button>
-      <button id="btn-kick-npc" class="hidden">🎮 PLAY</button>
-      <button id="btn-suggestions" class="hidden">💡 SUGGESTIONS</button>
-      <button id="btn-reviews" class="hidden">📝 REVIEWS</button>
+    <!-- Zoomed Machine View -->
+    <div id="zoomed-view" class="hidden">
+      <div id="zoomed-left">
+        <div id="zoomed-cards-label" class="zoomed-label">CARDS</div>
+        <div id="machine-cards"></div>
+        <div id="zoomed-actions-label" class="zoomed-label">ACTIONS</div>
+        <div id="zoomed-actions">
+          <button id="btn-kick-npc" class="zoomed-btn">🎮 PLAY</button>
+          <button id="btn-modify-game" class="zoomed-btn">✏️ MODIFY</button>
+          <button id="btn-new-game" class="zoomed-btn">🔄 NEW GAME</button>
+          <button id="btn-suggestions" class="zoomed-btn hidden">💡 SUGGESTIONS</button>
+          <button id="btn-reviews" class="zoomed-btn hidden">📝 REVIEWS</button>
+          <button id="btn-back" class="zoomed-btn">← BACK</button>
+        </div>
+      </div>
+      <div id="zoomed-right">
+        <div id="zoomed-meta">
+          <button id="btn-collection-z" class="zoomed-btn">📖 COLLECTION</button>
+          <button id="btn-history-z" class="zoomed-btn">📋 HISTORY</button>
+          <button id="btn-api-key-z" class="zoomed-btn">🔑 API KEY</button>
+        </div>
+      </div>
     </div>
-
-    <!-- Machine recipe cards display -->
-    <div id="machine-cards" class="hidden"></div>
 
     <!-- Iframe sandbox container (hidden) -->
     <div id="sandbox-container"></div>

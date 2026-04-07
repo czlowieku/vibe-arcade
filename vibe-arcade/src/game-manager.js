@@ -1,6 +1,6 @@
 import { getCardById } from './card-system.js';
 import { GameSandbox } from './game-sandbox.js';
-import { getApiKey } from './storage.js';
+import { getActiveKey } from './storage.js';
 import { CardModuleRegistry } from './card-module-registry.js';
 import { CodeAssembler } from './code-assembler.js';
 
@@ -35,8 +35,10 @@ export class GameManager {
     try {
       codeBundle = await assembler.assemble(recipe);
       dependencies = codeBundle.dependencies || [];
+      console.log('[assembler] OK — mergedCode:', codeBundle.mergedCode?.length, 'chars, scaffold:', !!codeBundle.scaffold, 'deps:', dependencies.length);
+      console.log('[assembler] aiContext:', codeBundle.aiContext?.slice(0, 200));
     } catch (err) {
-      console.warn('Code assembly failed, falling back to plain generation:', err);
+      console.warn('[assembler] FAILED, falling back to plain generation:', err);
     }
 
     try {
@@ -53,7 +55,7 @@ export class GameManager {
             modifier: recipe.modifier?.stars || 0,
           },
           extraInstructions,
-          apiKey: getApiKey(),
+          apiKey: getActiveKey(),
           codeBundle: codeBundle || undefined,
           dependencies: dependencies.length > 0 ? dependencies : undefined,
         }),
@@ -176,18 +178,25 @@ export class GameManager {
       ctx.fillText(display, 20, y);
     }
 
-    // Progress bar
-    const progress = Math.min(code.length / 8000, 1);
+    // Infinite pulsing loader bar
+    const t = Date.now() / 1000;
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(20, 570, 760, 12);
-    ctx.fillStyle = '#00fff5';
-    ctx.fillRect(20, 570, 760 * progress, 12);
+    // Moving glow segment
+    const barW = 200;
+    const barX = 20 + ((Math.sin(t * 1.5) * 0.5 + 0.5) * (760 - barW));
+    const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+    grad.addColorStop(0, 'rgba(0,255,245,0)');
+    grad.addColorStop(0.5, 'rgba(0,255,245,0.8)');
+    grad.addColorStop(1, 'rgba(0,255,245,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(barX, 570, barW, 12);
 
     // Bottom status
-    ctx.fillStyle = '#444';
+    ctx.fillStyle = '#666';
     ctx.font = '12px Courier New';
     ctx.textAlign = 'left';
-    ctx.fillText(`${lines.length} lines | ${code.length} chars`, 20, 560);
+    ctx.fillText(`${lines.length} lines | ${code.length} chars`, 20, 558);
 
     machine.screenTexture.needsUpdate = true;
   }
@@ -224,15 +233,13 @@ export class GameManager {
           }
         }
 
-        const coinsEarned = Math.max(10, Math.floor(score / 10));
-        this.gameState.coins += coinsEarned;
         this.gameState.totalGamesPlayed++;
         this.saveCallback();
 
         machine.drawReady();
 
         if (this.onGameOver) {
-          this.onGameOver(score, coinsEarned);
+          this.onGameOver(score, 0);
         }
       },
       deps

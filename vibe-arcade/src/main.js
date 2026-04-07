@@ -245,9 +245,9 @@ function _buildMiniCard(cardId, stars) {
   name.style.fontSize = '8px';
   name.textContent = card.name;
 
-  el.appendChild(starsEl);
   el.appendChild(icon);
   el.appendChild(name);
+  el.appendChild(starsEl);
   return el;
 }
 
@@ -255,7 +255,7 @@ function showMachineCards(machine) {
   const container = document.getElementById('machine-cards');
   container.replaceChildren();
   const saved = gameState.machines[machine.index];
-  if (!saved) { container.classList.add('hidden'); return; }
+  if (!saved) return;
 
   // If no recipe saved (old game), try to infer from title
   if (!saved.recipe && saved.title) {
@@ -268,7 +268,7 @@ function showMachineCards(machine) {
       saved.recipe = { genre: foundGenre || null, theme: foundTheme || null, modifier: null, engine: null, cardLevels: {} };
     }
   }
-  if (!saved.recipe) { container.classList.add('hidden'); return; }
+  if (!saved.recipe) return;
 
   const { genre, theme, modifier, engine } = saved.recipe;
   const cardLevels = saved.recipe.cardLevels || {};
@@ -287,22 +287,15 @@ function showMachineCards(machine) {
 
   // Added cards via drag & drop
   if (saved.addedCards && saved.addedCards.length > 0) {
-    const plus = document.createElement('div');
-    plus.style.cssText = 'display:flex;align-items:center;font-size:18px;color:#888;margin:0 2px;';
-    plus.textContent = '+';
-    container.appendChild(plus);
-
     for (const ac of saved.addedCards) {
       const el = _buildMiniCard(ac.cardId, ac.stars);
       if (el) container.appendChild(el);
     }
   }
-
-  container.classList.remove('hidden');
 }
 
 function hideMachineCards() {
-  document.getElementById('machine-cards').classList.add('hidden');
+  document.getElementById('machine-cards').replaceChildren();
 }
 
 hud.onPlayAgain = () => {
@@ -460,6 +453,8 @@ hud.onShowReviews = () => {
 hud.onKickNpc = () => {
   if (!activeMachine) return;
   const machine = activeMachine;
+
+  // Kick NPC if present
   if (machine.npcOccupant) {
     const npc = machine.npcOccupant;
     npc.showEmoticon('😤');
@@ -474,19 +469,15 @@ hud.onKickNpc = () => {
       new THREE.Vector3(npc.group.position.x, 0, 6),
       new THREE.Vector3(0, 0, 8),
     ];
-    hud.hideKickButton();
-
-    // Start playing immediately after kicking NPC
-    if (machine.gameCode) {
-      machine.state = 'ready';
-      machine.drawReady();
-      startPlaying(machine);
-    } else {
-      machine.state = 'ready';
-      machine.drawReady();
-    }
-    hud.updateDisplay();
   }
+
+  // Start playing (works with or without NPC)
+  if (machine.gameCode) {
+    machine.state = 'ready';
+    machine.drawReady();
+    startPlaying(machine);
+  }
+  hud.updateDisplay();
 };
 
 document.getElementById('btn-do-modify').addEventListener('click', () => {

@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'vibe-arcade';
 const API_KEY_KEY = 'vibe-arcade-api-key';
+const GEMINI_KEY_KEY = 'vibe-arcade-gemini-key';
+const PROVIDER_KEY = 'vibe-arcade-provider';
 
 export function getApiKey() {
   return localStorage.getItem(API_KEY_KEY) || '';
@@ -11,6 +13,30 @@ export function setApiKey(key) {
   } else {
     localStorage.removeItem(API_KEY_KEY);
   }
+}
+
+export function getGeminiKey() {
+  return localStorage.getItem(GEMINI_KEY_KEY) || '';
+}
+
+export function setGeminiKey(key) {
+  if (key) {
+    localStorage.setItem(GEMINI_KEY_KEY, key);
+  } else {
+    localStorage.removeItem(GEMINI_KEY_KEY);
+  }
+}
+
+export function getProvider() {
+  return localStorage.getItem(PROVIDER_KEY) || 'anthropic';
+}
+
+export function setProvider(provider) {
+  localStorage.setItem(PROVIDER_KEY, provider);
+}
+
+export function getActiveKey() {
+  return getProvider() === 'gemini' ? getGeminiKey() : getApiKey();
 }
 
 const defaultState = {

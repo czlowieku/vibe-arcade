@@ -78,89 +78,88 @@ function buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructi
     modifierSection = `\nSpecial Modifier: ${modifier}\n${MODIFIER_DESCRIPTIONS[modifier]}`;
   }
 
-  return `Create a complete, playable Canvas2D mini-game by combining the provided utility modules with a game loop.
+  return `Write ONLY a startGame function for a Canvas2D mini-game.
 
-=== GAME SPEC ===
 Genre: ${genre} — ${GENRE_DESCRIPTIONS[genre] || genre}
-Visual Theme: ${theme} — ${THEME_DESCRIPTIONS[theme] || theme}
+Theme: ${theme} — ${THEME_DESCRIPTIONS[theme] || theme}
 ${modifierSection}
-${extraInstructions ? `\nExtra instructions: ${extraInstructions}\n` : ''}
+${extraInstructions ? `\nExtra: ${extraInstructions}\n` : ''}
 
-=== UTILITY MODULES (include these at the top of your output, then use them) ===
+The following utility code is ALREADY LOADED in the environment (for reference only — do NOT copy it into your output):
 ${mergedCode}
 
-=== HOW TO USE THEM ===
+How to use them:
 ${aiContext}
 
-${scaffold ? `=== GAME SCAFFOLD (fill this in as your startGame) ===\n${scaffold}\n` : ''}
+${scaffold ? `Scaffold template:\n${scaffold}\n` : ''}
 
-=== WHAT TO OUTPUT ===
-Output a COMPLETE JavaScript file with this structure:
-1. First: paste ALL the utility code from above (classes, functions, constants) exactly as-is
-2. Then: write a function startGame(canvas, onScore, onGameOver) that uses those utilities
-   - canvas is 800x600 HTMLCanvasElement, use canvas.getContext('2d')
-   - requestAnimationFrame game loop
-   - Arrow keys + WASD + Space for input
-   - onScore(points) on scoring, onGameOver(finalScore) on game end
-   - Fun gameplay lasting 30-90 seconds with visible score
-   - Dark background, clear canvas each frame
-   - For gradients: ctx.createLinearGradient(), NOT CSS strings
-   - Skip title screen — gameplay starts immediately
-
-IMPORTANT: Your very first line must be a comment with a creative game title, like:
-// TITLE: Neon Gravity Blaster
-
-Then the rest of the JavaScript code. No markdown fences, no other explanation.`;
+OUTPUT RULES:
+- First line: // TITLE: Your Creative Game Name
+- Then: function startGame(canvas, onScore, onGameOver) { ... }
+- You may add small helper functions AFTER startGame if needed
+- DO NOT output any classes or functions that already exist above (they are pre-loaded)
+- Canvas is 800x600, use canvas.getContext('2d')
+- requestAnimationFrame game loop, arrow keys + WASD + Space
+- onScore(points) on scoring, onGameOver(finalScore) on game end
+- Fun gameplay 30-90 seconds, visible score, dark background
+- Gradients: ctx.createLinearGradient() not CSS strings
+- Leave safe zone around player spawn, 1-2s grace period at start
+- No markdown fences, no explanation, ONLY JavaScript code`;
 }
 
 function buildPrompt(genre, theme, modifier, cardLevels, extraInstructions) {
-  const complexity = Math.max(cardLevels.genre, cardLevels.theme, cardLevels.modifier || 1);
-  const complexityNote = complexity > 1
-    ? `Complexity level: ${complexity}/5. Add more enemies, obstacles, visual polish, and gameplay depth.`
-    : 'Keep it simple but fun and polished.';
-
   let modifierSection = '';
   if (modifier && MODIFIER_DESCRIPTIONS[modifier]) {
-    modifierSection = `\nSpecial Modifier: ${modifier}\n${MODIFIER_DESCRIPTIONS[modifier]}`;
+    modifierSection = `\n=== MODIFIER: ${modifier} ===\n${MODIFIER_DESCRIPTIONS[modifier]}`;
   }
 
-  return `Generate a mini-game using Canvas2D in JavaScript.
+  return `You are a game developer creating a polished, fun Canvas2D mini-game. Make it feel like a real indie game, not a tech demo.
 
-Genre: ${genre}
-${GENRE_DESCRIPTIONS[genre] || genre}
-
-Visual Theme: ${theme}
-${THEME_DESCRIPTIONS[theme] || theme}
+=== GAME CONCEPT ===
+Genre: ${genre} — ${GENRE_DESCRIPTIONS[genre] || genre}
+Theme: ${theme} — ${THEME_DESCRIPTIONS[theme] || theme}
 ${modifierSection}
+${extraInstructions ? `\nPlayer request: ${extraInstructions}` : ''}
 
-${complexityNote}
-${extraInstructions ? `\nADDITIONAL PLAYER INSTRUCTIONS:\n${extraInstructions}\n` : ''}
-CRITICAL REQUIREMENTS:
-1. Your code MUST define a function: function startGame(canvas, onScore, onGameOver)
-2. canvas is an HTMLCanvasElement (800x600 pixels)
-3. onScore(points) — call this whenever the player scores points
-4. onGameOver(finalScore) — call this when the game ends
-5. Use ONLY Canvas2D API: canvas.getContext('2d')
-6. Use requestAnimationFrame for the game loop
-7. Handle keyboard input with window.addEventListener('keydown'/'keyup')
-8. Support arrow keys AND WASD for movement, Space for action
-9. Game should be fun and playable, lasting 30-90 seconds
-10. Draw ALL visuals using Canvas2D (fillRect, arc, lineTo, etc.) — NO images or external resources
-11. Include a visible score display in the top-left corner
-12. Skip title screen — start gameplay immediately
+=== GAME DESIGN REQUIREMENTS ===
+Make this game GENUINELY FUN. Think about:
+- GAME FEEL: Responsive controls, satisfying feedback (screen shake, particles, flash effects on hits/collects)
+- PROGRESSION: Game should get harder over time — start easy, ramp difficulty every 15-20 seconds
+- JUICE: Add particles on explosions/collects, screen flash on damage, smooth animations, trail effects
+- VARIETY: Randomize enemy patterns, spawn positions, obstacle layouts — no two runs should feel the same
+- SCORING: Reward skill — combos, close calls, speed bonuses. Show score prominently with +points popup
+- POLISH: Smooth movement (use lerp/easing, not teleporting), camera shake on impacts, death animation before game over
+- PLAYER SPAWN: Start player in a safe zone. Give 1-2 seconds invincibility at start (blinking effect)
+- PACING: 30-90 seconds per game. Build tension toward the end
 
-CRITICAL Canvas2D rules (DO NOT BREAK):
-- For gradients use ctx.createLinearGradient() NOT CSS strings like "linear-gradient(...)"
-- fillStyle only accepts color strings (#hex, rgb(), rgba()) or CanvasGradient objects
-- Always clear/fill the canvas each frame with a dark background color
-- Keep the game simple but visually interesting with shapes and colors
-- Use a dark background (#0a0a1a or similar) with bright colored game elements
+=== VISUAL STYLE ===
+- Apply the ${theme} theme HEAVILY — this is what makes each game unique
+- Use at least 5-6 colors from the theme palette
+- Animated background (not static) — particles, scrolling, pulsing
+- UI elements styled to match theme (score display, health bar if any)
+- Entity variety — at least 3-4 different enemy/obstacle types with distinct appearances
 
-IMPORTANT: Your very first line must be a comment with a creative game title, like:
-// TITLE: Neon Gravity Blaster
+=== CONTROLS ===
+- Choose the best controls for the genre — keyboard, mouse, or both
+- Keyboard: arrow keys + WASD + Space (window.addEventListener keydown/keyup)
+- Mouse: canvas.addEventListener mousemove/click for aiming, shooting, dragging, etc.
+- IMPORTANT: Draw a small controls hint on screen during the first 3 seconds (e.g. "WASD to move, Click to shoot" or "Mouse to aim, Space to fire")
+- The hint should fade out after 3 seconds
 
-Then the rest of the JavaScript code. No markdown fences, no other explanation.
-The code must be a complete, self-contained script that defines startGame at the top level.`;
+=== TECHNICAL REQUIREMENTS ===
+1. Define: function startGame(canvas, onScore, onGameOver)
+2. Canvas is 800x600, use canvas.getContext('2d')
+3. onScore(points) when scoring, onGameOver(finalScore) when game ends
+4. requestAnimationFrame game loop with delta time (not frame-counting)
+5. Use ONLY Canvas2D — no images, no external resources, no fetch
+6. For gradients: ctx.createLinearGradient(), NEVER CSS strings
+7. fillStyle accepts only: '#hex', 'rgb()', 'rgba()', or CanvasGradient
+8. Clear/fill canvas every frame
+
+=== OUTPUT FORMAT ===
+First line: // TITLE: Your Creative Game Title
+Then: complete self-contained JavaScript code.
+No markdown fences. No explanation. Just code.`;
 }
 
 // Streaming via Anthropic Claude
@@ -217,9 +216,8 @@ async function streamGemini(prompt, apiKey, res, logEntry) {
 
 // Streaming version — sends SSE events as code is generated
 export async function generateGameStream(genre, theme, modifier, cardLevels, extraInstructions, apiKey, res, codeBundle, provider) {
-  const prompt = codeBundle
-    ? buildAssemblerPrompt(genre, theme, modifier, codeBundle, extraInstructions)
-    : buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
+  // Always use plain generation — modules were causing more problems than they solved
+  const prompt = buildPrompt(genre, theme, modifier, cardLevels, extraInstructions);
 
   const isGemini = provider === 'gemini';
   const modelName = isGemini ? 'gemini-3.1-pro-preview' : 'claude-opus-4-20250514';
@@ -298,11 +296,12 @@ export async function generateGameStream(genre, theme, modifier, cardLevels, ext
   }
 
   fullCode = sanitizeGameCode(fullCode);
-  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${fullCode.includes('function startGame')}`);
 
-  // Extract AI-generated title from first comment line
+  // Extract title
   const titleMatch = fullCode.match(/^\/\/\s*TITLE:\s*(.+)$/m);
   const title = titleMatch ? titleMatch[1].trim() : `${theme.toUpperCase()} ${genre.toUpperCase()}${modifier ? ' + ' + modifier.toUpperCase() : ''}`;
+
+  console.log(`[pipeline] ${fullCode.length} chars | startGame: ${fullCode.includes('function startGame')}`);
 
   const result = {
     type: 'done',

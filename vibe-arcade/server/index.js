@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { generateGameStream } from './generate.js';
 import { getLogs } from './logger.js';
 import { reviewGame } from './review.js';
+import { buildDebugPanel } from './debug-panel.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -16,14 +17,21 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // SSE streaming endpoint
 app.post('/api/generate', async (req, res) => {
   const { genre, theme, modifier, cardLevels, extraInstructions, apiKey, codeBundle, dependencies } = req.body;
+  let { provider } = req.body;
 
   if (!genre || !theme) {
     return res.status(400).json({ error: 'genre and theme are required' });
   }
 
   if (!apiKey) {
-    return res.status(400).json({ error: 'API key is required. Enter your Anthropic API key in settings.' });
+    return res.status(400).json({ error: 'API key is required. Set your API key in settings.' });
   }
+
+  // Auto-detect provider from key format if not explicitly set
+  if (!provider || provider === 'auto') {
+    provider = apiKey.startsWith('AIza') ? 'gemini' : 'anthropic';
+  }
+  console.log(`[DEBUG] apiKey prefix: "${apiKey.slice(0, 6)}...", provider resolved: ${provider}`);
 
   // Validate dependencies if present
   if (dependencies && dependencies.length > 0) {
@@ -35,8 +43,8 @@ app.post('/api/generate', async (req, res) => {
   }
 
   try {
-    console.log(`Generating game: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}${codeBundle ? ' [assembled]' : ''}`);
-    const result = await generateGameStream(genre, theme, modifier, cardLevels || {}, extraInstructions || '', apiKey, res, codeBundle || null);
+    console.log(`Generating game: ${genre} + ${theme}${modifier ? ' + ' + modifier : ''}${codeBundle ? ' [assembled]' : ''} [${provider || 'anthropic'}]`);
+    const result = await generateGameStream(genre, theme, modifier, cardLevels || {}, extraInstructions || '', apiKey, res, codeBundle || null, provider || 'anthropic');
     console.log(`Game generated: ${result.title} (${result.gameCode.length} chars)`);
   } catch (err) {
     console.error('Generation failed:', err.message);
@@ -53,12 +61,16 @@ app.post('/api/generate', async (req, res) => {
 
 app.post('/api/review', async (req, res) => {
   const { apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats } = req.body;
+  let { provider } = req.body;
+  if (!provider || provider === 'auto') {
+    provider = apiKey.startsWith('AIza') ? 'gemini' : 'anthropic';
+  }
   if (!apiKey || !gameCode) {
     return res.status(400).json({ error: 'apiKey and gameCode required' });
   }
   try {
-    console.log(`Reviewing game: ${genre} + ${theme} (score: ${npcScore}, ${stats?.plays || 0} plays)`);
-    const review = await reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats);
+    console.log(`Reviewing game: ${genre} + ${theme} (score: ${npcScore}, ${stats?.plays || 0} plays) [${provider || 'anthropic'}]`);
+    const review = await reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats, provider || 'anthropic');
     console.log(`Review result: ${review.rating}★ broken:${review.isBroken} — ${review.feedback?.slice(0, 80)}`);
     res.json(review);
   } catch (err) {
@@ -73,6 +85,10 @@ app.get('/api/logs', (req, res) => {
 
 app.get('/logs', (req, res) => {
   res.send(buildLogsDashboard());
+});
+
+app.get('/debug', (req, res) => {
+  res.send(buildDebugPanel());
 });
 
 app.listen(PORT, () => {
@@ -253,7 +269,7 @@ function selectLog(id) {
     var respSection = document.createElement('div');
     respSection.className = 'detail-section';
     var respH3 = document.createElement('h3');
-    respH3.textContent = 'AI Response (first 2000 chars)';
+    respH3.textContent = 'AI Response (full code)';
     var respPre = document.createElement('pre');
     respPre.className = 'response-pre';
     respPre.textContent = log.response;

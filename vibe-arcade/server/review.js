@@ -1,14 +1,16 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { log, addLogUpdate } from './logger.js';
 
-export async function reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats) {
-  const client = new Anthropic({ apiKey });
+export async function reviewGame(apiKey, gameCode, genre, theme, modifier, npcScore, existingSuggestions, stats, provider) {
+  const isGemini = provider === 'gemini';
   const startTime = Date.now();
 
+  const modelName = isGemini ? 'gemini-2.5-pro' : 'claude-haiku-4-5-20251001';
   const logEntry = {
     type: 'review', genre: genre || 'unknown', theme: theme || 'unknown', modifier, status: 'generating',
     message: `Reviewing: ${genre} + ${theme} (score: ${npcScore})`,
-    model: 'claude-haiku-4-5-20251001',
+    model: modelName,
     prompt: '', // will fill after building prompt
     response: '',
   };
@@ -51,13 +53,21 @@ Give 3-5 specific, actionable suggestions to make the game more fun and polished
 
   addLogUpdate(logEntry.id, { prompt: prompt.slice(0, 2000), promptLength: prompt.length });
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 500,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].text;
+  let text;
+  if (isGemini) {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+    const response = await model.generateContent(prompt);
+    text = response.response.text();
+  } else {
+    const client = new Anthropic({ apiKey });
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    text = response.content[0].text;
+  }
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON in response');
