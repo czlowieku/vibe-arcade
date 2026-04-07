@@ -114,15 +114,15 @@ export class ArcadeMachine {
     bezel.position.set(0, 1.6, 0.33);
     this.group.add(bezel);
 
-    // Screen — glowing CRT
+    // Screen — CRT with switchable glow
     const screenGeo = new THREE.PlaneGeometry(0.95, 0.7);
-    const screenMat = new THREE.MeshStandardMaterial({
+    this.screenMat = new THREE.MeshStandardMaterial({
       map: this.screenTexture,
       emissive: 0xffffff,
       emissiveMap: this.screenTexture,
-      emissiveIntensity: 1.2,
+      emissiveIntensity: 1.5, // strong glow for iso view (CRT feel)
     });
-    this.screenMesh = new THREE.Mesh(screenGeo, screenMat);
+    this.screenMesh = new THREE.Mesh(screenGeo, this.screenMat);
     this.screenMesh.position.set(0, 1.6, 0.36);
     this.screenMesh.userData = { machine: this };
     this.group.add(this.screenMesh);
@@ -363,6 +363,22 @@ export class ArcadeMachine {
     this.gameCode = gameCode;
     this.gameTitle = title;
     this.drawReady();
+  }
+
+  // Iso view: strong CRT glow for atmosphere
+  setCrtMode() {
+    if (this.screenMat) {
+      this.screenMat.emissive.setHex(0xffffff);
+      this.screenMat.emissiveIntensity = 1.5;
+    }
+  }
+
+  // Zoomed view: clear screen, no glow washout
+  setClearMode() {
+    if (this.screenMat) {
+      this.screenMat.emissive.setHex(0x000000);
+      this.screenMat.emissiveIntensity = 0;
+    }
   }
 
   drawBroken() {

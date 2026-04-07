@@ -567,20 +567,25 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
           machine.streamedCode += data.text;
           gameManager._drawStreamingScreen(machine, machine.streamedCode);
         } else if (data.type === 'done') {
-          machine.setGame(data.gameCode, data.title || machine.gameTitle, data.description);
+          console.log('[modify] New game received:', data.title, data.gameCode?.length, 'chars');
+          machine.gameCode = data.gameCode;
+          machine.gameTitle = data.title || machine.gameTitle;
+          machine.setGame(data.gameCode, machine.gameTitle, data.description);
           gameState.machines[machine.index] = {
             ...gameState.machines[machine.index],
             gameCode: data.gameCode,
-            title: data.title,
+            title: machine.gameTitle,
             description: data.description,
             brokenCount: 0,
           };
           save();
+          console.log('[modify] Saved. machine.gameCode length:', machine.gameCode.length);
         }
       }
     }
   }).catch(err => {
     console.error('Modify failed:', err);
+    machine.state = 'ready';
     machine.drawReady();
   });
 
@@ -877,6 +882,9 @@ canvas.addEventListener('drop', (e) => {
           machine.streamedCode += data.text;
           gameManager._drawStreamingScreen(machine, machine.streamedCode);
         } else if (data.type === 'done') {
+          console.log('[card-drop] New game received:', data.title, data.gameCode?.length, 'chars');
+          machine.gameCode = data.gameCode;
+          machine.gameTitle = data.title;
           machine.setGame(data.gameCode, data.title, data.description);
           gameState.machines[machine.index] = {
             ...gameState.machines[machine.index],
@@ -989,6 +997,16 @@ function animate() {
   npcManager.update(dt);
   arcadeRoom.update(dt);
   hud.updateNpcDisplay(reputation.getReputation(), npcManager.getNpcCount());
+
+  // Screen mode: CRT glow in iso, clear when zoomed
+  const isZoomed = cameraCtrl.mode === 'zoom';
+  for (const m of arcadeRoom.machines) {
+    if (m === activeMachine && isZoomed) {
+      m.setClearMode();
+    } else {
+      m.setCrtMode();
+    }
+  }
 
   dust.update(dt);
   composer.render();
