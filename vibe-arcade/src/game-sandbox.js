@@ -189,16 +189,20 @@ ${gameCode}
     const gameX = uv.x * 800;
     const gameY = (1 - uv.y) * 600; // UV y is flipped
 
-    // Dispatch on the hidden game canvas
-    const event = new MouseEvent(type, {
+    // Dispatch on the hidden game canvas + window + document
+    // (games listen in different places)
+    const eventInit = {
       clientX: gameX,
       offsetX: gameX,
       clientY: gameY,
       offsetY: gameY,
       bubbles: true,
       cancelable: true,
-    });
-    this.gameCanvas.dispatchEvent(event);
+      button: 0,
+    };
+    this.gameCanvas.dispatchEvent(new MouseEvent(type, eventInit));
+    document.dispatchEvent(new MouseEvent(type, eventInit));
+    window.dispatchEvent(new MouseEvent(type, eventInit));
   }
 
   stop() {
