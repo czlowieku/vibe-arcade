@@ -66,6 +66,27 @@ export class GameSandbox {
     this.gameCanvas.style.cssText = 'position:absolute;top:-9999px;left:-9999px;';
     document.body.appendChild(this.gameCanvas);
 
+    // Error collection — shows errors on game canvas
+    this._errors = [];
+    const origConsoleError = console.error;
+    this._restoreConsole = () => { console.error = origConsoleError; };
+    console.error = (...args) => {
+      origConsoleError.apply(console, args);
+      if (this._runToken !== myToken) return;
+      const msg = args.map(a => typeof a === 'object' ? (a.message || JSON.stringify(a)) : String(a)).join(' ');
+      if (msg.includes('Game error') || msg.includes('NPC game error')) return; // skip our own wrapper errors
+      this._errors.push(msg.slice(0, 120));
+      if (this._errors.length > 5) this._errors.shift();
+    };
+
+    // Also catch unhandled errors from game code
+    this._errorHandler = (e) => {
+      if (this._runToken !== myToken) return;
+      this._errors.push((e.message || 'Unknown error').slice(0, 120));
+      if (this._errors.length > 5) this._errors.shift();
+    };
+    window.addEventListener('error', this._errorHandler);
+
     // Callbacks — token-guarded so old games can't fire into new ones
     window.__vibe_onScore = (points) => {
       if (this._runToken === myToken && this.onScore) this.onScore(points);
@@ -125,6 +146,22 @@ ${gameCode}
     if (!this.running || !this.gameCanvas) return false;
     try {
       targetCtx.drawImage(this.gameCanvas, 0, 0);
+
+      // Draw error overlay if there are errors
+      if (this._errors && this._errors.length > 0) {
+        const ctx = targetCtx;
+        const errCount = this._errors.length;
+        const panelH = 16 + errCount * 16;
+        ctx.fillStyle = 'rgba(180,0,0,0.75)';
+        ctx.fillRect(0, 600 - panelH, 800, panelH);
+        ctx.font = '12px Courier New';
+        ctx.textAlign = 'left';
+        for (let i = 0; i < errCount; i++) {
+          ctx.fillStyle = i === errCount - 1 ? '#ff8888' : '#ff6666';
+          ctx.fillText('⚠ ' + this._errors[i], 8, 600 - panelH + 14 + i * 16);
+        }
+      }
+
       return true;
     } catch (e) {
       return false;
@@ -136,6 +173,9 @@ ${gameCode}
   stop() {
     this.running = false;
     this._runToken = ++runToken; // invalidate old game loops
+    if (this._restoreConsole) { this._restoreConsole(); this._restoreConsole = null; }
+    if (this._errorHandler) { window.removeEventListener('error', this._errorHandler); this._errorHandler = null; }
+    this._errors = [];
     if (this._script && this._script.parentNode) {
       this._script.parentNode.removeChild(this._script);
       this._script = null;
