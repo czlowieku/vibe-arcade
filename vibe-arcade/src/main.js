@@ -264,7 +264,14 @@ function prepareForGeneration(machine) {
       new THREE.Vector3(0, 0, 8),
     ];
   }
-  prepareForGeneration(machine);
+  // Clear suggestions (they belong to the old game)
+  machine.suggestions = [];
+  const saved = gameState.machines[machine.index];
+  if (saved) saved.suggestions = [];
+
+  machine.state = 'generating';
+  machine.streamedCode = '';
+  gameManager._drawStreamingScreen(machine, '');
 }
 
 function showMachineCards(machine) {

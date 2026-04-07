@@ -95,6 +95,9 @@ export class GameManager {
             this._drawStreamingScreen(machine, machine.streamedCode);
           } else if (data.type === 'done') {
             machine.setGame(data.gameCode, data.title, data.description);
+            machine.suggestions = [];
+            machine.brokenCount = 0;
+            machine._healthStats = null;
             this.gameState.machines[machine.index] = {
               gameCode: data.gameCode,
               title: data.title,
