@@ -900,7 +900,14 @@ function startPlaying(machine) {
 document.addEventListener('keydown', (e) => {
   // Don't intercept keys when typing in inputs/textareas
   const tag = e.target.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  // Don't intercept when any overlay panel is open
+  const panels = ['modify-panel', 'create-panel', 'prompt-panel', 'api-key-panel', 'collection-panel', 'history-panel', 'reviews-panel', 'suggestions-panel'];
+  for (const id of panels) {
+    const el = document.getElementById(id);
+    if (el && !el.classList.contains('hidden')) return;
+  }
 
   if (e.key === 'Escape') {
     if (activeMachine && activeMachine.engine) {
