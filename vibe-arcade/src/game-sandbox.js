@@ -1,5 +1,6 @@
 // Game sandbox - executes AI-generated Canvas2D game code directly
 // This is intentional dynamic code execution for AI-generated mini-games.
+import * as THREE from 'three';
 
 const ALLOWED_CDN_HOSTS = new Set([
   'cdn.jsdelivr.net',
@@ -169,6 +170,36 @@ ${gameCode}
   }
 
   sendInput(type, key, code) {}
+
+  // Forward mouse event from 3D canvas to hidden game canvas
+  sendMouse(type, screenX, screenY, machineScreenMesh, camera) {
+    if (!this.running || !this.gameCanvas) return;
+
+    // Raycast to find UV coordinates on the machine screen
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(screenX, screenY);
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(machineScreenMesh);
+    if (intersects.length === 0) return;
+
+    const uv = intersects[0].uv;
+    if (!uv) return;
+
+    // Convert UV (0-1) to game canvas coords (800x600)
+    const gameX = uv.x * 800;
+    const gameY = (1 - uv.y) * 600; // UV y is flipped
+
+    // Dispatch on the hidden game canvas
+    const event = new MouseEvent(type, {
+      clientX: gameX,
+      offsetX: gameX,
+      clientY: gameY,
+      offsetY: gameY,
+      bubbles: true,
+      cancelable: true,
+    });
+    this.gameCanvas.dispatchEvent(event);
+  }
 
   stop() {
     this.running = false;

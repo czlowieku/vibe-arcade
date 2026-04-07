@@ -701,7 +701,34 @@ canvas.addEventListener('mouseleave', () => {
   }
 });
 
+// Forward mouse events to game when playing
+function forwardMouseToGame(event, type) {
+  if (!gameManager.currentMachine || gameManager.currentMachine.state !== 'playing') return false;
+  const mx = (event.clientX / window.innerWidth) * 2 - 1;
+  const my = -(event.clientY / window.innerHeight) * 2 + 1;
+  gameManager.sandbox.sendMouse(type, mx, my, gameManager.currentMachine.screenMesh, camera);
+  return true;
+}
+
+canvas.addEventListener('mousemove', (event) => {
+  forwardMouseToGame(event, 'mousemove');
+});
+
+canvas.addEventListener('mousedown', (event) => {
+  forwardMouseToGame(event, 'mousedown');
+});
+
+canvas.addEventListener('mouseup', (event) => {
+  forwardMouseToGame(event, 'mouseup');
+});
+
 canvas.addEventListener('click', (event) => {
+  // Forward click to game if playing
+  if (forwardMouseToGame(event, 'click')) {
+    // Still allow the click handler below to run for zoomed+ready state
+    if (cameraCtrl.isZoomed() && gameManager.currentMachine?.state === 'playing') return;
+  }
+
   // Skip if user was dragging the camera
   if (cameraCtrl.isDragging()) return;
 
