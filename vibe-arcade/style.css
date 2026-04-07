@@ -693,7 +693,7 @@ body {
 /* ISO view buttons (bottom right) */
 #top-menu {
   position: absolute;
-  top: 14px;
+  top: 60px;
   right: 20px;
   z-index: 20;
   display: flex;
