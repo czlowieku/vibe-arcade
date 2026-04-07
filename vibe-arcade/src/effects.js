@@ -13,9 +13,9 @@ export function setupPostProcessing(renderer, scene, camera) {
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.35,  // bloom strength (subtle glow, not blinding)
-    0.3,   // radius
-    0.9    // threshold — only very bright things bloom
+    0.5,   // bloom strength
+    0.5,   // radius — wider glow spread
+    0.8    // threshold
   );
   composer.addPass(bloomPass);
 

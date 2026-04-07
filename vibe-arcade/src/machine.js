@@ -120,7 +120,7 @@ export class ArcadeMachine {
       map: this.screenTexture,
       emissive: 0xffffff,
       emissiveMap: this.screenTexture,
-      emissiveIntensity: 1.5, // strong glow for iso view (CRT feel)
+      emissiveIntensity: 2.5, // strong glow for iso view (CRT feel)
     });
     this.screenMesh = new THREE.Mesh(screenGeo, this.screenMat);
     this.screenMesh.position.set(0, 1.6, 0.36);
@@ -369,7 +369,7 @@ export class ArcadeMachine {
   setCrtMode() {
     if (this.screenMat) {
       this.screenMat.emissive.setHex(0xffffff);
-      this.screenMat.emissiveIntensity = 1.5;
+      this.screenMat.emissiveIntensity = 2.5;
     }
   }
 
