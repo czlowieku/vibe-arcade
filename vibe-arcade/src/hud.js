@@ -13,7 +13,7 @@ export class HUD {
     this.coinsEarnedEl = document.getElementById('coins-earned');
     this.cardPackPanel = document.getElementById('card-pack');
     this.packCardsEl = document.getElementById('pack-cards');
-    this.buyPackEl = document.getElementById('buy-pack');
+    this.topMenuEl = document.getElementById('top-menu');
     this.zoomedViewEl = document.getElementById('zoomed-view');
     this.reputationEl = document.getElementById('reputation-value');
     this.visitorsEl = document.getElementById('visitors-value');
@@ -44,9 +44,6 @@ export class HUD {
       if (this.onBackToArcade) this.onBackToArcade();
     });
 
-    document.getElementById('btn-buy-pack').addEventListener('click', () => {
-      this.buyPack();
-    });
 
     document.getElementById('btn-close-pack').addEventListener('click', () => {
       this.cardPackPanel.classList.add('hidden');
@@ -117,19 +114,6 @@ export class HUD {
       this.reviewsPanel.classList.add('hidden');
     });
 
-    // Zoomed-view duplicate buttons (right sidebar)
-    document.getElementById('btn-collection-z').addEventListener('click', () => {
-      this.showCollection();
-    });
-    document.getElementById('btn-history-z').addEventListener('click', () => {
-      this.showHistory();
-    });
-    document.getElementById('btn-api-key-z').addEventListener('click', () => {
-      document.getElementById('api-key-input').value = getApiKey();
-      document.getElementById('gemini-key-input').value = getGeminiKey();
-      this._updateProviderToggle(getProvider());
-      document.getElementById('api-key-panel').classList.remove('hidden');
-    });
 
     this._updateApiKeyButton();
   }
@@ -146,8 +130,6 @@ export class HUD {
     const label = provider === 'gemini' ? 'GEMINI' : 'ANTHROPIC';
     const text = hasKey ? `🔑 ${label} ✓` : `🔑 ${label}`;
     document.getElementById('btn-api-key').textContent = text;
-    const zBtn = document.getElementById('btn-api-key-z');
-    if (zBtn) zBtn.textContent = text;
   }
 
   showCollection() {
@@ -244,13 +226,6 @@ export class HUD {
     this.coinsEl.textContent = this.gameState.coins;
     this.levelEl.textContent = Math.floor(this.gameState.totalGamesPlayed / 5) + 1;
 
-    // Show buy-pack bar only when not in zoomed view
-    if (this.zoomedViewEl.classList.contains('hidden')) {
-      this.buyPackEl.classList.remove('hidden');
-    }
-    // Disable/enable buy pack button based on coins
-    const buyBtn = document.getElementById('btn-buy-pack');
-    buyBtn.disabled = this.gameState.coins < PACK_COST;
   }
 
   showGameOver(score, coinsEarned) {
@@ -266,15 +241,12 @@ export class HUD {
 
   showBackButton() {
     this.zoomedViewEl.classList.remove('hidden');
-    this.buyPackEl.classList.add('hidden');
-    // Restore action button visibility by default
     document.getElementById('btn-modify-game').classList.remove('hidden');
     document.getElementById('btn-new-game').classList.remove('hidden');
   }
 
   hideBackButton() {
     this.zoomedViewEl.classList.add('hidden');
-    this.buyPackEl.classList.remove('hidden');
   }
 
   updateNpcDisplay(reputation, visitorCount) {
