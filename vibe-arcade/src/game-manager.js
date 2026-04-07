@@ -25,6 +25,14 @@ export class GameManager {
     const modifier = recipe.modifier ? getCardById(recipe.modifier.cardId) : null;
     const engine = recipe.engine ? getCardById(recipe.engine.cardId) : null;
 
+    // Kick NPC if occupying
+    if (machine.npcOccupant) {
+      const npc = machine.npcOccupant;
+      machine.npcOccupant = null;
+      if (npc.gameRunner) { npc.gameRunner.stop(); npc.gameRunner = null; }
+      npc.state = 'leaving';
+      npc.targetMachine = null;
+    }
     machine.state = 'generating';
     machine.streamedCode = '';
     this._drawStreamingScreen(machine, '');

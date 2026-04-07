@@ -614,6 +614,15 @@ export class NpcManager {
       : '';
     const extraInstructions = `CRITICAL: The previous version of this game was broken/unplayable. Issue: ${feedback || 'game crashes or freezes'}. Generate a WORKING version. Test your logic carefully.${suggestions}`;
 
+    // Kick NPC if occupying
+    if (machine.npcOccupant) {
+      const npc = machine.npcOccupant;
+      machine.npcOccupant = null;
+      if (npc.gameRunner) { npc.gameRunner.stop(); npc.gameRunner = null; }
+      npc.state = STATES.LEAVING;
+      npc.targetMachine = null;
+      npc.walkQueue = [new THREE.Vector3(npc.group.position.x, 0, 6), new THREE.Vector3(0, 0, 8)];
+    }
     machine.state = 'generating';
     machine.streamedCode = '';
     // Immediately show "generating" screen

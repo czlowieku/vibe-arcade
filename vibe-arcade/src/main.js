@@ -251,6 +251,22 @@ function _buildMiniCard(cardId, stars) {
   return el;
 }
 
+function prepareForGeneration(machine) {
+  // Kick NPC if occupying this machine
+  if (machine.npcOccupant) {
+    const npc = machine.npcOccupant;
+    machine.npcOccupant = null;
+    if (npc.gameRunner) { npc.gameRunner.stop(); npc.gameRunner = null; }
+    npc.state = 'leaving';
+    npc.targetMachine = null;
+    npc.walkQueue = [
+      new THREE.Vector3(npc.group.position.x, 0, 6),
+      new THREE.Vector3(0, 0, 8),
+    ];
+  }
+  prepareForGeneration(machine);
+}
+
 function showMachineCards(machine) {
   const container = document.getElementById('machine-cards');
   container.replaceChildren();
@@ -510,9 +526,7 @@ document.getElementById('btn-do-modify').addEventListener('click', () => {
   const extraContext = `The existing game code is:\n${machine.gameCode}\n\n${instructions ? 'Player wants these modifications: ' + instructions : 'Regenerate with card changes.'}${cardChanges}${suggestionsCtx}\n\nRewrite the entire game with these changes applied. Keep the same startGame(canvas, onScore, onGameOver) API.`;
 
   // Regenerate with the existing game as context
-  machine.state = 'generating';
-  machine.streamedCode = '';
-  gameManager._drawStreamingScreen(machine, '');
+  prepareForGeneration(machine);
 
   const modGenre = saved?.recipe?.genre || 'custom';
   const modTheme = saved?.recipe?.theme || 'custom';
@@ -826,9 +840,7 @@ canvas.addEventListener('drop', (e) => {
   const extraContext = `The existing game code is:\n${machine.gameCode}\n\nIMPORTANT MODIFICATION REQUEST: ${instruction}${dropSuggestionsCtx}\n\nRewrite the ENTIRE game with these changes applied. The changes must be DRAMATIC and OBVIOUS. Keep the same startGame(canvas, onScore, onGameOver) API.`;
 
   activeMachine = machine;
-  machine.state = 'generating';
-  machine.streamedCode = '';
-  gameManager._drawStreamingScreen(machine, '');
+  prepareForGeneration(machine);
 
   fetch('/api/generate', {
     method: 'POST',
