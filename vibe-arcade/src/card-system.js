@@ -10,7 +10,7 @@ export const CARDS = {
     { id: 'snake', name: 'Snake', icon: '🐍', category: 'genre', desc: 'Grow longer, dont crash' },
     { id: 'tower-defense', name: 'Tower Defense', icon: '🏰', category: 'genre', desc: 'Place towers, stop waves' },
     { id: 'fighting', name: 'Fighting', icon: '🥊', category: 'genre', desc: '1v1 beat-em-up combat' },
-    { id: 'rhythm', name: 'Rhythm', icon: '🎵', category: 'genre', desc: 'Hit notes to the beat' },
+
     { id: 'golf', name: 'Mini Golf', icon: '⛳', category: 'genre', desc: 'Aim, shoot, hole in one' },
     { id: 'racing', name: 'Racing', icon: '🏎️', category: 'genre', desc: 'Top-down speed race' },
     { id: 'fishing', name: 'Fishing', icon: '🎣', category: 'genre', desc: 'Cast, wait, reel em in' },
@@ -19,7 +19,7 @@ export const CARDS = {
     { id: 'neon', name: 'Neon', icon: '🌈', category: 'theme', desc: 'Glowing neon cyberpunk', moduleId: 'neon' },
     { id: 'space', name: 'Space', icon: '🚀', category: 'theme', desc: 'Deep space adventure', moduleId: 'space' },
     { id: 'retro', name: 'Retro', icon: '👾', category: 'theme', desc: '8-bit pixel style', moduleId: 'retro' },
-    { id: 'ocean', name: 'Ocean', icon: '🌊', category: 'theme', desc: 'Underwater world', moduleId: 'ocean' },
+
     { id: 'forest', name: 'Forest', icon: '🌲', category: 'theme', desc: 'Enchanted woodland', moduleId: 'forest' },
     { id: 'horror', name: 'Horror', icon: '👻', category: 'theme', desc: 'Creepy dark spooky vibes' },
     { id: 'candy', name: 'Candy', icon: '🍬', category: 'theme', desc: 'Sweet colorful sugar world' },
@@ -32,18 +32,18 @@ export const CARDS = {
   ],
   modifier: [
     { id: 'speed-up', name: 'Speed Up', icon: '⏩', category: 'modifier', desc: 'Gets faster over time', moduleId: 'speed-up' },
-    { id: 'gravity-flip', name: 'Gravity Flip', icon: '🔄', category: 'modifier', desc: 'Reverse gravity mechanic', moduleId: 'gravity-flip' },
+
     { id: 'time-limit', name: 'Time Limit', icon: '⏱️', category: 'modifier', desc: 'Beat the clock', moduleId: 'time-limit' },
     { id: 'boss', name: 'Boss Fight', icon: '👹', category: 'modifier', desc: 'Epic boss encounter', moduleId: 'boss' },
     { id: 'powerups', name: 'Power-Ups', icon: '⭐', category: 'modifier', desc: 'Creative power-ups for this game', moduleId: 'powerups' },
     { id: 'combo', name: 'Combo Chain', icon: '🔥', category: 'modifier', desc: 'Chain hits for score multiplier' },
     { id: 'survival', name: 'Survival', icon: '💀', category: 'modifier', desc: 'Endless waves, how long can you last?' },
-    { id: 'tiny', name: 'Tiny Mode', icon: '🔬', category: 'modifier', desc: 'Everything is tiny and fast' },
+
     { id: 'mirror', name: 'Mirror', icon: '🪞', category: 'modifier', desc: 'Controls are reversed!' },
     { id: 'fog-of-war', name: 'Fog of War', icon: '🌫️', category: 'modifier', desc: 'Can only see near player' },
     { id: 'one-hit', name: 'One Hit', icon: '💔', category: 'modifier', desc: 'One hit and youre dead' },
     { id: 'growing', name: 'Growing', icon: '📈', category: 'modifier', desc: 'Player grows bigger over time' },
-    { id: 'split', name: 'Split Screen', icon: '📺', category: 'modifier', desc: 'Control 2 players at once!' },
+
   ],
   engine: [
     { id: 'phaser', name: 'Phaser', icon: '🎮', category: 'engine', desc: 'Full game engine', moduleId: 'phaser' },
