@@ -777,30 +777,18 @@ export class ArcadeRoom {
   }
 
   _addScreenGlows() {
-    const screenColors = [0x00fff5, 0xff00ff, 0x00ff88, 0xffff00, 0xff4444, 0x4488ff, 0x00fff5, 0xff00ff];
+    const screenColors = [0x00fff5, 0xff00ff, 0x00ff88, 0xffff00, 0xff4444, 0x4488ff];
     for (let i = 0; i < this.machines.length; i++) {
       const machine = this.machines[i];
       const pos = machine.group.position;
       const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), machine.group.rotation.y);
-      const color = screenColors[i % screenColors.length];
-
-      // Main screen glow — bright, medium range
-      const glowLight = new THREE.PointLight(color, 1.2, 5);
+      const glowLight = new THREE.PointLight(screenColors[i % screenColors.length], 0.4, 4);
       glowLight.position.set(
-        pos.x + forward.x * 0.8,
-        1.6,
-        pos.z + forward.z * 0.8
+        pos.x + forward.x * 1.0,
+        1.5,
+        pos.z + forward.z * 1.0
       );
       this.scene.add(glowLight);
-
-      // Floor reflection — colored light hitting the floor
-      const floorGlow = new THREE.PointLight(color, 0.6, 3);
-      floorGlow.position.set(
-        pos.x + forward.x * 0.6,
-        0.1,
-        pos.z + forward.z * 0.6
-      );
-      this.scene.add(floorGlow);
     }
   }
 }
